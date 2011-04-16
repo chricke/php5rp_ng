@@ -5,11 +5,10 @@ STATUS
     This software is still under development and is considered experimental.
 
 Description
-    php5rp_ng is a fork of <http://code.google.com/p/php5rp/> with all issues fixed which are listed under <http://code.google.com/p/php5rp/issues/list>. 
+    php5rp_ng is a fork of <http://code.google.com/p/php5rp/> with all issues fixed 
+    which are listed under <http://code.google.com/p/php5rp/issues/list>. 
     
-	Description taken from original source:
-	
-	This is a reverse proxy written in PHP5. It uses cURL to handle the back-end connections. I wrote it to replace some mod_perl code that was slow because it had to talk to our back-end API via XML calls. This turned out to be faster.
+	This is a reverse proxy written in PHP5. It uses cURL to handle the back-end connections. 
 	
 	What is it useful for?
 	Some uses may include
