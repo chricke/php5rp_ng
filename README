@@ -6,6 +6,16 @@ STATUS
 
 Description
     php5rp_ng is a fork of <http://code.google.com/p/php5rp/> with all issues fixed which are listed under <http://code.google.com/p/php5rp/issues/list>. 
+    
+	Description taken from original source:
+	
+	This is a reverse proxy written in PHP5. It uses cURL to handle the back-end connections. I wrote it to replace some mod_perl code that was slow because it had to talk to our back-end API via XML calls. This turned out to be faster.
+	
+	What is it useful for?
+	Some uses may include
+	
+	Extend the class to add an SSO layer to back-end app servers not written in PHP
+	Extend to handle authorization and authentication to a back-end database (SVN, for example)    
 
 Installation
     Example files on how to use it are available in the examples folder.
