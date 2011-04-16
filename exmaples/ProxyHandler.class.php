@@ -18,8 +18,8 @@ class ProxyHandler
         $this->proxy_url =  rtrim($proxy_url,'/');
 
         // Parse all the parameters for the URL
-        if (isset($_SERVER['PATH_INFO'])) {
-            $proxy_url .= $_SERVER['PATH_INFO'];
+        if (isset($_SERVER["REQUEST_URI"])) {
+            $proxy_url .= $_SERVER["REQUEST_URI"];
         }
         else {
             // Add the '/' at the end
