@@ -1,5 +1,6 @@
 <?php
-	require("ProxyHandler.class.php");	
-	$proxy = new ProxyHandler('http://adult-sex-porn-blog.com/','http://46.252.16.18/');
+	include 'ProxyHandler.class.php';
+	$proxy = new ProxyHandler('http://external.domain.com'.$_SERVER["REQUEST_URI"],'http://internal.domain.com'.$_SERVER["REQUEST_URI"]);
 	$proxy->execute();
+	// print_r($proxy->getCurlInfo()); // Uncomment to see request info
 ?>
