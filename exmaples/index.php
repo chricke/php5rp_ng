@@ -1,6 +1,6 @@
 <?php
 
-if (!@include 'ProxyHandler.class.php') {
+if (!@include __DIR__ . '/../ProxyHandler.class.php') {
     die('Could not load proxy');
 }
 
