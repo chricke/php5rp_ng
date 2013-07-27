@@ -1,6 +1,13 @@
 <?php
-	include 'ProxyHandler.class.php';
-	$proxy = new ProxyHandler('http://external.example.com','http://internal.example.com');
-	$proxy->execute();
-	//print_r($proxy->getCurlInfo()); // Uncomment to see request info
-?>
+
+if (!@include 'ProxyHandler.class.php') {
+    die('Could not load proxy');
+}
+
+$proxy = new ProxyHandler(
+	'http://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'],
+	'http://internal.example.com'
+);
+
+$proxy->execute();
+//print_r($proxy->getCurlInfo()); // Uncomment to see request info
