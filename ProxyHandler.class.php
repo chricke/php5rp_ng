@@ -6,14 +6,14 @@ class ProxyHandler
     private $proxy_url;
     private $translated_url;
     private $curl_handler;
-    private $cache_control=false;
-    private $pragma=false;
-    private $client_headers=array();
+    private $cache_control = false;
+    private $pragma = false;
+    private $client_headers = array();
 
     function __construct($url, $proxy_url, $base_uri = null) {
         // Strip the trailing '/' from the URLs so they are the same.
         $this->url = rtrim($url,'/');
-        $this->proxy_url =  rtrim($proxy_url,'/');
+        $this->proxy_url = rtrim($proxy_url,'/');
 
         if ($base_uri === null && isset($_SERVER['REDIRECT_URL'])) {
             $base_uri = dirname($_SERVER['REDIRECT_URL']);
@@ -50,25 +50,25 @@ class ProxyHandler
         // Process post data.
         if (count($_POST)) {
             // Empty the post data
-            $post=array();
+            $post = array();
 
             // Set the post data
             $this->setCurlOption(CURLOPT_POST, true);
 
             // Encode and form the post data
-           if (!isset($HTTP_RAW_POST_DATA)){
-            $HTTP_RAW_POST_DATA = file_get_contents("php://input");
-           }
+            if (!isset($HTTP_RAW_POST_DATA)) {
+                $HTTP_RAW_POST_DATA = file_get_contents("php://input");
+            }
 
-           $this->setCurlOption(CURLOPT_POSTFIELDS, $HTTP_RAW_POST_DATA);
+            $this->setCurlOption(CURLOPT_POSTFIELDS, $HTTP_RAW_POST_DATA);
 
             unset($post);
         }
-        elseif ($_SERVER['REQUEST_METHOD'] !== 'GET'){ // Default request method is 'get'
+        elseif ($_SERVER['REQUEST_METHOD'] !== 'GET') { // Default request method is 'get'
             // Set the request method
             $this->setCurlOption(CURLOPT_CUSTOMREQUEST, $_SERVER['REQUEST_METHOD']);
         }
-        elseif ($_SERVER['REQUEST_METHOD'] == 'PUT'){
+        elseif ($_SERVER['REQUEST_METHOD'] == 'PUT') {
             // Set the request method.
             $this->setCurlOption(CURLOPT_UPLOAD, 1);
 
@@ -80,7 +80,6 @@ class ProxyHandler
 
         // Handle the client headers.
         $this->handleClientHeaders();
-
     }
 
     public function setClientHeader($header) {
@@ -109,15 +108,14 @@ class ProxyHandler
         if (preg_match(',^Location:,', $string)) {
             $string = str_replace($this->proxy_url, $this->url, $string);
         }
-        elseif(preg_match(',^Cache-Control:,', $string)) {
+        elseif (preg_match(',^Cache-Control:,', $string)) {
             $this->cache_control = true;
         }
-        elseif(preg_match(',^Pragma:,', $string)) {
+        elseif (preg_match(',^Pragma:,', $string)) {
             $this->pragma = true;
         }
         if ($string !== "\r\n") {
             header(rtrim($string));
-
         }
         return $length;
     }
@@ -156,17 +154,16 @@ class ProxyHandler
     }
 
     function request_headers(){
-        if(function_exists("apache_request_headers")){ // If apache_request_headers() exists
-            if($headers = apache_request_headers()){ // And works...
-
+        if (function_exists("apache_request_headers")) { // If apache_request_headers() exists
+            if ($headers = apache_request_headers()) { // And works...
                 return $headers; // Use it
             }
         }
 
         $headers = array();
 
-        foreach(array_keys($_SERVER) as $skey){
-            if(substr($skey, 0, 5) == "HTTP_"){
+        foreach (array_keys($_SERVER) as $skey) {
+            if (substr($skey, 0, 5) == "HTTP_") {
                 $headername = str_replace(" ", "-", ucwords(strtolower(str_replace("_", "", substr($skey, 0, 5)))));
                 $headers[$headername] = $_SERVER[$skey];
             }
