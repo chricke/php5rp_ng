@@ -4,8 +4,6 @@ class ProxyHandler
 {
     private $url;
     private $proxy_url;
-    private $proxy_host;
-    private $proxy_proto;
     private $translated_url;
     private $curl_handler;
     private $cache_control=false;
