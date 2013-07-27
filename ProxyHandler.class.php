@@ -10,7 +10,8 @@ class ProxyHandler
     private $pragma = false;
     private $client_headers = array();
 
-    function __construct($url, $proxy_url, $base_uri = null) {
+    function __construct($url, $proxy_url, $base_uri = null)
+    {
         // Strip the trailing '/' from the URLs so they are the same.
         $this->url = rtrim($url,'/');
         $this->proxy_url = rtrim($proxy_url,'/');
@@ -82,28 +83,33 @@ class ProxyHandler
         $this->handleClientHeaders();
     }
 
-    public function setClientHeader($header) {
+    public function setClientHeader($header)
+    {
         $this->client_headers[] = $header;
     }
 
     // Executes the proxy.
-    public function execute() {
+    public function execute()
+    {
         $this->setCurlOption(CURLOPT_HTTPHEADER, $this->client_headers);
         curl_exec($this->curl_handler);
     }
 
     // Get the information about the request.
     // Should not be called before exec.
-    public function getCurlInfo() {
+    public function getCurlInfo()
+    {
         return curl_getinfo($this->curl_handler);
     }
 
     // Sets a curl option.
-    public function setCurlOption($option, $value) {
+    public function setCurlOption($option, $value)
+    {
         curl_setopt($this->curl_handler, $option, $value);
     }
 
-    protected function readHeaders(&$cu, $string) {
+    protected function readHeaders(&$cu, $string)
+    {
         $length = strlen($string);
         if (preg_match(',^Location:,', $string)) {
             $string = str_replace($this->proxy_url, $this->url, $string);
@@ -120,7 +126,8 @@ class ProxyHandler
         return $length;
     }
 
-    protected function handleClientHeaders() {
+    protected function handleClientHeaders()
+    {
         $headers = $this->request_headers();
 
         foreach ($headers as $header => $value) {
@@ -134,7 +141,8 @@ class ProxyHandler
         }
     }
 
-    protected function readResponse(&$cu, $string) {
+    protected function readResponse(&$cu, $string)
+    {
         static $headersParsed = false;
 
         // Clear the Cache-Control and Pragma headers
@@ -153,7 +161,8 @@ class ProxyHandler
         return $length;
     }
 
-    function request_headers(){
+    function request_headers()
+    {
         if (function_exists("apache_request_headers")) { // If apache_request_headers() exists
             if ($headers = apache_request_headers()) { // And works...
                 return $headers; // Use it
