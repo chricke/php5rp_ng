@@ -2,6 +2,9 @@
 
 class ProxyHandler
 {
+    const RN = "\r\n";
+
+    private $chunked = false;
     private $url;
     private $proxy_url;
     private $translated_url;
@@ -95,6 +98,14 @@ class ProxyHandler
         curl_exec($this->curl_handler);
     }
 
+    public function close()
+    {
+        if ($this->chunked) {
+            echo '0' . self::RN . self::RN;
+        }
+        curl_close($this->curl_handler);
+    }
+
     // Get the information about the request.
     // Should not be called before exec.
     public function getCurlInfo()
@@ -119,6 +130,9 @@ class ProxyHandler
         }
         elseif (preg_match(',^Pragma:,', $string)) {
             $this->pragma = true;
+        }
+        elseif (preg_match(',^Transfer-Encoding:,', $string)) {
+            $this->chunked = strpos($string, 'chunked') !== false;
         }
         if ($string !== "\r\n") {
             header(rtrim($string));
@@ -156,8 +170,13 @@ class ProxyHandler
             }
             $headersParsed = true;
         }
+
         $length = strlen($string);
-        echo $string;
+        if ($this->chunked) {
+            echo dechex($length) . self::RN . $string . self::RN;
+        } else {
+            echo $string;
+        }
         return $length;
     }
 

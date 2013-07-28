@@ -11,3 +11,4 @@ $proxy = new ProxyHandler(
 
 $proxy->execute();
 //print_r($proxy->getCurlInfo()); // Uncomment to see request info
+$proxy->close();
