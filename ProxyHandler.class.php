@@ -147,10 +147,11 @@ class ProxyHandler
 
         foreach ($headers as $header => $value) {
             switch($header) {
+                case 'Host':
+                case 'X-Real-IP':
+                    break;
                 case 'X-Forwarded-For':
                     $xForwardedFor[] = $value;
-                    break;
-                case 'Host':
                     break;
                 default:
                     $this->setClientHeader(sprintf('%s: %s', $header, $value));
@@ -160,6 +161,7 @@ class ProxyHandler
 
         $xForwardedFor[] = $_SERVER['REMOTE_ADDR'];
         $this->setClientHeader('X-Forwarded-For: ' . implode(',', $xForwardedFor));
+        $this->setClientHeader('X-Real-IP: ' . $xForwardedFor[0]);
     }
 
     protected function readResponse(&$cu, $string)
