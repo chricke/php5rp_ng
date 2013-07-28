@@ -1,6 +1,6 @@
 <?php
 
-if (!@include 'ProxyHandler.class.php') {
+if (!@include __DIR__ . '/../ProxyHandler.class.php') {
     die('Could not load proxy');
 }
 
@@ -11,3 +11,4 @@ $proxy = new ProxyHandler(
 
 $proxy->execute();
 //print_r($proxy->getCurlInfo()); // Uncomment to see request info
+$proxy->close();
