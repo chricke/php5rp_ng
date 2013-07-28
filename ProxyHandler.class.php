@@ -45,6 +45,7 @@ class ProxyHandler
         $this->curl_handler = curl_init($this->translated_url);
 
         // Set various options
+        $this->setCurlOption(CURLOPT_FOLLOWLOCATION, true);
         $this->setCurlOption(CURLOPT_RETURNTRANSFER, true);
         $this->setCurlOption(CURLOPT_BINARYTRANSFER, true); // For images, etc.
         $this->setCurlOption(CURLOPT_USERAGENT, $_SERVER['HTTP_USER_AGENT']);
