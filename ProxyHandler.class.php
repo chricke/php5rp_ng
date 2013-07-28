@@ -196,14 +196,13 @@ class ProxyHandler
         }
 
         $headers = array();
-
         foreach (array_keys($_SERVER) as $skey) {
-            if (substr($skey, 0, 5) == "HTTP_") {
-                $headername = str_replace(" ", "-", ucwords(strtolower(str_replace("_", "", substr($skey, 0, 5)))));
+            if (substr($skey, 0, 5) == 'HTTP_') {
+                $headername = substr($skey, 5, strlen($skey));
+                $headername = str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', $headername))));
                 $headers[$headername] = $_SERVER[$skey];
             }
         }
-
         return $headers;
     }
 }
