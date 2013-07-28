@@ -143,9 +143,13 @@ class ProxyHandler
     protected function handleClientHeaders()
     {
         $headers = $this->request_headers();
+        $xForwardedFor = array();
 
         foreach ($headers as $header => $value) {
             switch($header) {
+                case 'X-Forwarded-For':
+                    $xForwardedFor[] = $value;
+                    break;
                 case 'Host':
                     break;
                 default:
@@ -153,6 +157,9 @@ class ProxyHandler
                     break;
             }
         }
+
+        $xForwardedFor[] = $_SERVER['REMOTE_ADDR'];
+        $this->setClientHeader('X-Forwarded-For: ' . implode(',', $xForwardedFor));
     }
 
     protected function readResponse(&$cu, $string)
