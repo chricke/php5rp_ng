@@ -16,8 +16,8 @@ class ProxyHandler
     function __construct($url, $proxy_url, $base_uri = null)
     {
         // Strip the trailing '/' from the URLs so they are the same.
-        $this->url = rtrim($url,'/');
-        $this->proxy_url = rtrim($proxy_url,'/');
+        $this->url = rtrim($url, '/');
+        $this->proxy_url = rtrim($proxy_url, '/');
 
         if ($base_uri === null && isset($_SERVER['REDIRECT_URL'])) {
             $base_uri = dirname($_SERVER['REDIRECT_URL']);
@@ -47,9 +47,9 @@ class ProxyHandler
         // Set various options
         $this->setCurlOption(CURLOPT_RETURNTRANSFER, true);
         $this->setCurlOption(CURLOPT_BINARYTRANSFER, true); // For images, etc.
-        $this->setCurlOption(CURLOPT_USERAGENT,$_SERVER['HTTP_USER_AGENT']);
-        $this->setCurlOption(CURLOPT_WRITEFUNCTION, array($this,'readResponse'));
-        $this->setCurlOption(CURLOPT_HEADERFUNCTION, array($this,'readHeaders'));
+        $this->setCurlOption(CURLOPT_USERAGENT, $_SERVER['HTTP_USER_AGENT']);
+        $this->setCurlOption(CURLOPT_WRITEFUNCTION, array($this, 'readResponse'));
+        $this->setCurlOption(CURLOPT_HEADERFUNCTION, array($this, 'readHeaders'));
 
         // Process post data.
         if (count($_POST)) {
@@ -122,6 +122,7 @@ class ProxyHandler
     protected function readHeaders(&$cu, $string)
     {
         $length = strlen($string);
+
         if (preg_match(',^Location:,', $string)) {
             $string = str_replace($this->proxy_url, $this->url, $string);
         }
@@ -134,9 +135,11 @@ class ProxyHandler
         elseif (preg_match(',^Transfer-Encoding:,', $string)) {
             $this->chunked = strpos($string, 'chunked') !== false;
         }
+
         if ($string !== "\r\n") {
             header(rtrim($string));
         }
+
         return $length;
     }
 
