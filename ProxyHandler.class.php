@@ -5,7 +5,6 @@ class ProxyHandler
     const RN = "\r\n";
 
     private $chunked = false;
-    private $url;
     private $proxy_url;
     private $translated_url;
     private $curl_handler;
@@ -13,10 +12,9 @@ class ProxyHandler
     private $pragma = false;
     private $client_headers = array();
 
-    function __construct($url, $proxy_url, $base_uri = null)
+    function __construct($proxy_url, $base_uri = null)
     {
         // Strip the trailing '/' from the URLs so they are the same.
-        $this->url = rtrim($url, '/');
         $this->proxy_url = rtrim($proxy_url, '/');
 
         if ($base_uri === null && isset($_SERVER['REDIRECT_URL'])) {
