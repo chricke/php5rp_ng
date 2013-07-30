@@ -1,45 +1,48 @@
-NAME
-    php5rp_ng - PHP5 Reverse Proxy Next Generation
+# php5rp_ng
+### PHP5 Reverse Proxy Next Generation
 
-STATUS
-    This software is still under development and is considered experimental.
+> This software is still under development and is considered experimental.
 
-Description
-    php5rp_ng is a fork of <http://code.google.com/p/php5rp/> with all issues fixed 
-    which are listed under <http://code.google.com/p/php5rp/issues/list>. 
-    
-	This is a reverse proxy written in PHP5. It uses cURL to handle the back-end connections. 
-	
-	What is it useful for?
-	Some uses may include
-	
-	Extend the class to add an SSO layer to back-end app servers not written in PHP
-	Extend to handle authorization and authentication to a back-end database (SVN, for example)    
+### Description
 
-Installation
-    Example files on how to use it are available in the examples folder.
+php5rp_ng is a fork of <http://code.google.com/p/php5rp/> with all issues fixed
+which are listed under <http://code.google.com/p/php5rp/issues/list>.
 
-Report Bugs
-    Whenever you are bitten by any quirks, please don't hesitate to
+This is a reverse proxy written in PHP5. It uses cURL to handle the back-end connections.
 
-    1.  send a bug report or even patches to <mail@christian-beckmann.net>,
+What is it useful for? Some uses may include:
 
-    2.  or create a ticket on the issue tracking interface
-        (<https://github.com/chricke/php5rp_ng/issues>)
-        provided by GitHub.
+- Extend the class to add an SSO layer to back-end app servers not written in PHP
+- Extend to handle authorization and authentication to a back-end database (SVN, for example)
 
-Source Repository
-    Available on github at chricke/online-right-now
-    (<https://github.com/chricke/php5rp_ng>).
+### Installation
 
-TODO
-    * Add caching functionality
+Example files on how to use it are available in the examples folder.
 
-AUTHORS
-    Brian Nelson < mrpoundsign@gmail.com >
-    Christian "chricke" Beckmann < mail@christian-beckmann.net >
+### Report Bugs
 
-Copyright & License
+Whenever you are bitten by any quirks, please don't hesitate to
+
+1.  send a bug report or even patches to <mail@christian-beckmann.net>,
+2.  or create a ticket on the issue tracking interface
+    (<https://github.com/chricke/php5rp_ng/issues>)
+    provided by GitHub.
+
+### Source Repository
+
+- Available on github at chricke/online-right-now
+- (<https://github.com/chricke/php5rp_ng>).
+
+### TODO
+
+- [ ] Add caching functionality
+
+### Authors
+
+- Brian Nelson < mrpoundsign@gmail.com >
+- Christian "chricke" Beckmann < mail@christian-beckmann.net >
+
+### Copyright & License
 
     Copyright (c) 2010, 2011 Christian "chricke" Beckmann < mail@christian-beckmann.net >.
 
