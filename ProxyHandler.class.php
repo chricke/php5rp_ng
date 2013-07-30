@@ -16,8 +16,8 @@ class ProxyHandler
     function __construct($url, $proxy_url, $base_uri = null)
     {
         // Strip the trailing '/' from the URLs so they are the same.
-        $this->url = rtrim($url,'/');
-        $this->proxy_url = rtrim($proxy_url,'/');
+        $this->url = rtrim($url, '/');
+        $this->proxy_url = rtrim($proxy_url, '/');
 
         if ($base_uri === null && isset($_SERVER['REDIRECT_URL'])) {
             $base_uri = dirname($_SERVER['REDIRECT_URL']);
@@ -45,11 +45,12 @@ class ProxyHandler
         $this->curl_handler = curl_init($this->translated_url);
 
         // Set various options
+        $this->setCurlOption(CURLOPT_FOLLOWLOCATION, true);
         $this->setCurlOption(CURLOPT_RETURNTRANSFER, true);
         $this->setCurlOption(CURLOPT_BINARYTRANSFER, true); // For images, etc.
-        $this->setCurlOption(CURLOPT_USERAGENT,$_SERVER['HTTP_USER_AGENT']);
-        $this->setCurlOption(CURLOPT_WRITEFUNCTION, array($this,'readResponse'));
-        $this->setCurlOption(CURLOPT_HEADERFUNCTION, array($this,'readHeaders'));
+        $this->setCurlOption(CURLOPT_USERAGENT, $_SERVER['HTTP_USER_AGENT']);
+        $this->setCurlOption(CURLOPT_WRITEFUNCTION, array($this, 'readResponse'));
+        $this->setCurlOption(CURLOPT_HEADERFUNCTION, array($this, 'readHeaders'));
 
         // Process post data.
         if (count($_POST)) {
@@ -122,6 +123,7 @@ class ProxyHandler
     protected function readHeaders(&$cu, $string)
     {
         $length = strlen($string);
+
         if (preg_match(',^Location:,', $string)) {
             $string = str_replace($this->proxy_url, $this->url, $string);
         }
@@ -134,25 +136,36 @@ class ProxyHandler
         elseif (preg_match(',^Transfer-Encoding:,', $string)) {
             $this->chunked = strpos($string, 'chunked') !== false;
         }
+
         if ($string !== "\r\n") {
             header(rtrim($string));
         }
+
         return $length;
     }
 
     protected function handleClientHeaders()
     {
         $headers = $this->request_headers();
+        $xForwardedFor = array();
 
         foreach ($headers as $header => $value) {
             switch($header) {
                 case 'Host':
+                case 'X-Real-IP':
+                    break;
+                case 'X-Forwarded-For':
+                    $xForwardedFor[] = $value;
                     break;
                 default:
                     $this->setClientHeader(sprintf('%s: %s', $header, $value));
                     break;
             }
         }
+
+        $xForwardedFor[] = $_SERVER['REMOTE_ADDR'];
+        $this->setClientHeader('X-Forwarded-For: ' . implode(',', $xForwardedFor));
+        $this->setClientHeader('X-Real-IP: ' . $xForwardedFor[0]);
     }
 
     protected function readResponse(&$cu, $string)
@@ -189,14 +202,13 @@ class ProxyHandler
         }
 
         $headers = array();
-
         foreach (array_keys($_SERVER) as $skey) {
-            if (substr($skey, 0, 5) == "HTTP_") {
-                $headername = str_replace(" ", "-", ucwords(strtolower(str_replace("_", "", substr($skey, 0, 5)))));
+            if (substr($skey, 0, 5) == 'HTTP_') {
+                $headername = substr($skey, 5, strlen($skey));
+                $headername = str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', $headername))));
                 $headers[$headername] = $_SERVER[$skey];
             }
         }
-
         return $headers;
     }
 }
