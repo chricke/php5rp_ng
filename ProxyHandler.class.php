@@ -23,7 +23,7 @@ class ProxyHandler
 
         // Parse all the parameters for the URL
         if (isset($_SERVER['REQUEST_URI'])) {
-            $request_uri = $_SERVER['REQUEST_URI'];
+            $request_uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
             if ($base_uri && strpos($request_uri, $base_uri) === 0) {
                 $request_uri = substr($request_uri, strlen($base_uri));
             }
