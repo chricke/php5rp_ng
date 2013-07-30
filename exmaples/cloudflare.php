@@ -13,11 +13,7 @@ class CloudFlareSafeProxy extends ProxyHandler
     }
 }
 
-$proxy = new CloudFlareSafeProxy(
-    'http://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'],
-    'http://internal.example.com'
-);
-
+$proxy = new CloudFlareSafeProxy('http://internal.example.com');
 $proxy->execute();
 //print_r($proxy->getCurlInfo()); // Uncomment to see request info
 $proxy->close();
