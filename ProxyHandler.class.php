@@ -124,10 +124,7 @@ class ProxyHandler
     {
         $length = strlen($string);
 
-        if (preg_match(',^Location:,', $string)) {
-            $string = str_replace($this->proxy_url, $this->url, $string);
-        }
-        elseif (preg_match(',^Cache-Control:,', $string)) {
+        if (preg_match(',^Cache-Control:,', $string)) {
             $this->cache_control = true;
         }
         elseif (preg_match(',^Pragma:,', $string)) {
