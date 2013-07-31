@@ -5,7 +5,6 @@ class ProxyHandler
     const RN = "\r\n";
 
     private $chunked = false;
-    private $url;
     private $proxy_url;
     private $translated_url;
     private $curl_handler;
@@ -13,10 +12,9 @@ class ProxyHandler
     private $pragma = false;
     private $client_headers = array();
 
-    function __construct($url, $proxy_url, $base_uri = null)
+    function __construct($proxy_url, $base_uri = null)
     {
-        // Strip the trailing '/' from the URLs so they are the same.
-        $this->url = rtrim($url, '/');
+        // Strip the trailing '/' from the URL so they are the same.
         $this->proxy_url = rtrim($proxy_url, '/');
 
         if ($base_uri === null && isset($_SERVER['REDIRECT_URL'])) {
@@ -25,7 +23,7 @@ class ProxyHandler
 
         // Parse all the parameters for the URL
         if (isset($_SERVER['REQUEST_URI'])) {
-            $request_uri = $_SERVER['REQUEST_URI'];
+            $request_uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
             if ($base_uri && strpos($request_uri, $base_uri) === 0) {
                 $request_uri = substr($request_uri, strlen($base_uri));
             }
@@ -117,10 +115,7 @@ class ProxyHandler
     {
         $length = strlen($string);
 
-        if (preg_match(',^Location:,', $string)) {
-            $string = str_replace($this->proxy_url, $this->url, $string);
-        }
-        elseif (preg_match(',^Cache-Control:,', $string)) {
+        if (preg_match(',^Cache-Control:,', $string)) {
             $this->cache_control = true;
         }
         elseif (preg_match(',^Pragma:,', $string)) {
@@ -130,7 +125,7 @@ class ProxyHandler
             $this->chunked = strpos($string, 'chunked') !== false;
         }
 
-        if ($string !== "\r\n") {
+        if ($string !== self::RN) {
             header(rtrim($string));
         }
 
@@ -139,7 +134,7 @@ class ProxyHandler
 
     protected function handleClientHeaders()
     {
-        $headers = $this->request_headers();
+        $headers = $this->requestHeaders();
         $xForwardedFor = array();
 
         foreach ($headers as $header => $value) {
@@ -186,9 +181,9 @@ class ProxyHandler
         return $length;
     }
 
-    function request_headers()
+    private function requestHeaders()
     {
-        if (function_exists("apache_request_headers")) { // If apache_request_headers() exists
+        if (function_exists('apache_request_headers')) { // If apache_request_headers() exists
             if ($headers = apache_request_headers()) { // And works...
                 return $headers; // Use it
             }
@@ -197,8 +192,8 @@ class ProxyHandler
         $headers = array();
         foreach (array_keys($_SERVER) as $skey) {
             if (substr($skey, 0, 5) == 'HTTP_') {
-                $headername = substr($skey, 5, strlen($skey));
-                $headername = str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', $headername))));
+                $headername = strtolower(substr($skey, 5, strlen($skey)));
+                $headername = str_replace(' ', '-', ucwords(str_replace('_', ' ', $headername)));
                 $headers[$headername] = $_SERVER[$skey];
             }
         }
