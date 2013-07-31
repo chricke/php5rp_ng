@@ -52,35 +52,28 @@ class ProxyHandler
         $this->setCurlOption(CURLOPT_WRITEFUNCTION, array($this, 'readResponse'));
         $this->setCurlOption(CURLOPT_HEADERFUNCTION, array($this, 'readHeaders'));
 
-        // Process post data.
-        if (count($_POST)) {
-            // Empty the post data
-            $post = array();
-
-            // Set the post data
-            $this->setCurlOption(CURLOPT_POST, true);
-
-            // Encode and form the post data
-            if (!isset($HTTP_RAW_POST_DATA)) {
-                $HTTP_RAW_POST_DATA = file_get_contents("php://input");
-            }
-
-            $this->setCurlOption(CURLOPT_POSTFIELDS, $HTTP_RAW_POST_DATA);
-
-            unset($post);
-        }
-        elseif ($_SERVER['REQUEST_METHOD'] !== 'GET') { // Default request method is 'get'
+        $method = $_SERVER['REQUEST_METHOD'];
+        if ($method !== 'GET') { // Default curl request method is 'GET'
             // Set the request method
-            $this->setCurlOption(CURLOPT_CUSTOMREQUEST, $_SERVER['REQUEST_METHOD']);
-        }
-        elseif ($_SERVER['REQUEST_METHOD'] == 'PUT') {
-            // Set the request method.
-            $this->setCurlOption(CURLOPT_UPLOAD, 1);
+            $this->setCurlOption(CURLOPT_CUSTOMREQUEST, $method);
 
-            // PUT data comes in on the stdin stream.
-            $putdata = fopen("php://input", "r");
-            $this->setCurlOption(CURLOPT_READDATA, $putdata);
-            // TODO: set CURLOPT_INFILESIZE to the value of Content-Length.
+            switch($method) {
+                case 'POST':
+                    // Encode and form the post data
+                    if (!isset($HTTP_RAW_POST_DATA)) {
+                        $HTTP_RAW_POST_DATA = file_get_contents('php://input');
+                    }
+                    $this->setCurlOption(CURLOPT_POSTFIELDS, $HTTP_RAW_POST_DATA);
+                    break;
+                case 'PUT':
+                    // Set the request method.
+                    $this->setCurlOption(CURLOPT_UPLOAD, 1);
+                    // PUT data comes in on the stdin stream.
+                    $putdata = fopen('php://input', 'r');
+                    $this->setCurlOption(CURLOPT_READDATA, $putdata);
+                    // TODO: set CURLOPT_INFILESIZE to the value of Content-Length.
+                    break;
+            }
         }
 
         // Handle the client headers.
