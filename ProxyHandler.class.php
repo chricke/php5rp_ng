@@ -4,11 +4,11 @@ class ProxyHandler
 {
     const RN = "\r\n";
 
-    private $_chunked = false;
-    private $_curlHandle;
     private $_cacheControl = false;
-    private $_pragma = false;
+    private $_chunked = false;
     private $_clientHeaders = array();
+    private $_curlHandle;
+    private $_pragma = false;
 
     function __construct($proxyUri, $baseUri = null)
     {
@@ -74,65 +74,32 @@ class ProxyHandler
         $this->handleClientHeaders();
     }
 
-    public function setClientHeader($headerName, $value)
+    private function _getRequestHeaders()
     {
-        $this->_clientHeaders[] = $headerName . ': ' . $value;
-    }
-
-    // Executes the proxy.
-    public function execute()
-    {
-        $this->setCurlOption(CURLOPT_HTTPHEADER, $this->_clientHeaders);
-        return curl_exec($this->_curlHandle) !== false;
-    }
-
-    public function close()
-    {
-        if ($this->_chunked) {
-            echo '0' . self::RN . self::RN;
-        }
-        curl_close($this->_curlHandle);
-    }
-
-    // Get possible curl error.
-    // Should not be called before exec.
-    public function getCurlError()
-    {
-        return curl_error($this->_curlHandle);
-    }
-
-    // Get the information about the request.
-    // Should not be called before exec.
-    public function getCurlInfo()
-    {
-        return curl_getinfo($this->_curlHandle);
-    }
-
-    // Sets a curl option.
-    public function setCurlOption($option, $value)
-    {
-        curl_setopt($this->_curlHandle, $option, $value);
-    }
-
-    protected function readHeaders(&$cu, $header)
-    {
-        $length = strlen($header);
-
-        if (preg_match(',^Cache-Control:,', $header)) {
-            $this->_cacheControl = true;
-        }
-        elseif (preg_match(',^Pragma:,', $header)) {
-            $this->_pragma = true;
-        }
-        elseif (preg_match(',^Transfer-Encoding:,', $header)) {
-            $this->_chunked = strpos($header, 'chunked') !== false;
+        if (function_exists('apache_request_headers')) {
+            if ($headers = apache_request_headers()) {
+                return $headers;
+            }
         }
 
-        if ($header !== self::RN) {
-            header(rtrim($header));
+        $headers = array();
+        foreach ($_SERVER as $key => $value) {
+            if (substr($key, 0, 5) == 'HTTP_' && !empty($value)) {
+                $headerName = strtolower(substr($key, 5, strlen($key)));
+                $headerName = str_replace(' ', '-', ucwords(str_replace('_', ' ', $headerName)));
+                $headers[$headerName] = $value;
+            }
         }
+        return $headers;
+    }
 
-        return $length;
+    private function _removeHeader($headerName)
+    {
+        if (function_exists('header_remove')) {
+            header_remove($headerName);
+        } else {
+            header($headerName . ': ');
+        }
     }
 
     protected function handleClientHeaders()
@@ -157,6 +124,27 @@ class ProxyHandler
         $xForwardedFor[] = $_SERVER['REMOTE_ADDR'];
         $this->setClientHeader('X-Forwarded-For', implode(',', $xForwardedFor));
         $this->setClientHeader('X-Real-IP', $xForwardedFor[0]);
+    }
+
+    protected function readHeaders(&$cu, $header)
+    {
+        $length = strlen($header);
+
+        if (preg_match(',^Cache-Control:,', $header)) {
+            $this->_cacheControl = true;
+        }
+        elseif (preg_match(',^Pragma:,', $header)) {
+            $this->_pragma = true;
+        }
+        elseif (preg_match(',^Transfer-Encoding:,', $header)) {
+            $this->_chunked = strpos($header, 'chunked') !== false;
+        }
+
+        if ($header !== self::RN) {
+            header(rtrim($header));
+        }
+
+        return $length;
     }
 
     protected function readResponse(&$cu, $body)
@@ -184,31 +172,43 @@ class ProxyHandler
         return $length;
     }
 
-    private function _getRequestHeaders()
+    public function close()
     {
-        if (function_exists('apache_request_headers')) {
-            if ($headers = apache_request_headers()) {
-                return $headers;
-            }
+        if ($this->_chunked) {
+            echo '0' . self::RN . self::RN;
         }
-
-        $headers = array();
-        foreach ($_SERVER as $key => $value) {
-            if (substr($key, 0, 5) == 'HTTP_' && !empty($value)) {
-                $headerName = strtolower(substr($key, 5, strlen($key)));
-                $headerName = str_replace(' ', '-', ucwords(str_replace('_', ' ', $headerName)));
-                $headers[$headerName] = $value;
-            }
-        }
-        return $headers;
+        curl_close($this->_curlHandle);
     }
 
-    private function _removeHeader($headerName)
+    // Executes the proxy.
+    public function execute()
     {
-        if (function_exists('header_remove')) {
-            header_remove($headerName);
-        } else {
-            header($headerName . ': ');
-        }
+        $this->setCurlOption(CURLOPT_HTTPHEADER, $this->_clientHeaders);
+        return curl_exec($this->_curlHandle) !== false;
+    }
+
+    // Get possible curl error.
+    // Should not be called before exec.
+    public function getCurlError()
+    {
+        return curl_error($this->_curlHandle);
+    }
+
+    // Get the information about the request.
+    // Should not be called before exec.
+    public function getCurlInfo()
+    {
+        return curl_getinfo($this->_curlHandle);
+    }
+
+    public function setClientHeader($headerName, $value)
+    {
+        $this->_clientHeaders[] = $headerName . ': ' . $value;
+    }
+
+    // Sets a curl option.
+    public function setCurlOption($option, $value)
+    {
+        curl_setopt($this->_curlHandle, $option, $value);
     }
 }
