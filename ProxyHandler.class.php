@@ -12,7 +12,6 @@ class ProxyHandler
 
     function __construct($proxyUri, $baseUri = null)
     {
-        // Strip the trailing '/' from the URL so they are the same.
         $translatedUri = rtrim($proxyUri, '/');
 
         if ($baseUri === null && isset($_SERVER['REDIRECT_URL'])) {
@@ -28,7 +27,6 @@ class ProxyHandler
             $translatedUri .= $requestUri;
         }
         else {
-            // Add the '/' at the end
             $translatedUri .= '/';
         }
 
@@ -42,7 +40,6 @@ class ProxyHandler
         $this->setCurlOption(CURLOPT_FOLLOWLOCATION, true);
         $this->setCurlOption(CURLOPT_RETURNTRANSFER, true);
         $this->setCurlOption(CURLOPT_BINARYTRANSFER, true); // For images, etc.
-        $this->setCurlOption(CURLOPT_USERAGENT, $_SERVER['HTTP_USER_AGENT']);
         $this->setCurlOption(CURLOPT_WRITEFUNCTION, array($this, 'readResponse'));
         $this->setCurlOption(CURLOPT_HEADERFUNCTION, array($this, 'readHeaders'));
 
