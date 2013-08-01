@@ -5,8 +5,6 @@ class ProxyHandler
     const RN = "\r\n";
 
     private $chunked = false;
-    private $proxy_url;
-    private $translated_url;
     private $curl_handler;
     private $cache_control = false;
     private $pragma = false;
@@ -15,7 +13,7 @@ class ProxyHandler
     function __construct($proxy_url, $base_uri = null)
     {
         // Strip the trailing '/' from the URL so they are the same.
-        $this->proxy_url = rtrim($proxy_url, '/');
+        $translated_url = rtrim($proxy_url, '/');
 
         if ($base_uri === null && isset($_SERVER['REDIRECT_URL'])) {
             $base_uri = dirname($_SERVER['REDIRECT_URL']);
@@ -27,20 +25,18 @@ class ProxyHandler
             if ($base_uri && strpos($request_uri, $base_uri) === 0) {
                 $request_uri = substr($request_uri, strlen($base_uri));
             }
-            $proxy_url .= $request_uri;
+            $translated_url .= $request_uri;
         }
         else {
             // Add the '/' at the end
-            $proxy_url .= '/';
+            $translated_url .= '/';
         }
 
         if ($_SERVER['QUERY_STRING'] !== '') {
-            $proxy_url .= "?{$_SERVER['QUERY_STRING']}";
+            $translated_url .= "?{$_SERVER['QUERY_STRING']}";
         }
 
-        $this->translated_url = $proxy_url;
-
-        $this->curl_handler = curl_init($this->translated_url);
+        $this->curl_handler = curl_init($translated_url);
 
         // Set various options
         $this->setCurlOption(CURLOPT_FOLLOWLOCATION, true);
