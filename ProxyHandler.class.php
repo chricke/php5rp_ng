@@ -4,11 +4,11 @@ class ProxyHandler
 {
     const RN = "\r\n";
 
-    private $chunked = false;
-    private $curl_handler;
-    private $cache_control = false;
-    private $pragma = false;
-    private $client_headers = array();
+    private $_chunked = false;
+    private $_curlHandle;
+    private $_cacheControl = false;
+    private $_pragma = false;
+    private $_clientHeaders = array();
 
     function __construct($proxy_url, $base_uri = null)
     {
@@ -36,7 +36,7 @@ class ProxyHandler
             $translated_url .= "?{$_SERVER['QUERY_STRING']}";
         }
 
-        $this->curl_handler = curl_init($translated_url);
+        $this->_curlHandle = curl_init($translated_url);
 
         // Set various options
         $this->setCurlOption(CURLOPT_FOLLOWLOCATION, true);
@@ -76,35 +76,35 @@ class ProxyHandler
 
     public function setClientHeader($header)
     {
-        $this->client_headers[] = $header;
+        $this->_clientHeaders[] = $header;
     }
 
     // Executes the proxy.
     public function execute()
     {
-        $this->setCurlOption(CURLOPT_HTTPHEADER, $this->client_headers);
-        curl_exec($this->curl_handler);
+        $this->setCurlOption(CURLOPT_HTTPHEADER, $this->_clientHeaders);
+        curl_exec($this->_curlHandle);
     }
 
     public function close()
     {
-        if ($this->chunked) {
+        if ($this->_chunked) {
             echo '0' . self::RN . self::RN;
         }
-        curl_close($this->curl_handler);
+        curl_close($this->_curlHandle);
     }
 
     // Get the information about the request.
     // Should not be called before exec.
     public function getCurlInfo()
     {
-        return curl_getinfo($this->curl_handler);
+        return curl_getinfo($this->_curlHandle);
     }
 
     // Sets a curl option.
     public function setCurlOption($option, $value)
     {
-        curl_setopt($this->curl_handler, $option, $value);
+        curl_setopt($this->_curlHandle, $option, $value);
     }
 
     protected function readHeaders(&$cu, $string)
@@ -112,13 +112,13 @@ class ProxyHandler
         $length = strlen($string);
 
         if (preg_match(',^Cache-Control:,', $string)) {
-            $this->cache_control = true;
+            $this->_cacheControl = true;
         }
         elseif (preg_match(',^Pragma:,', $string)) {
-            $this->pragma = true;
+            $this->_pragma = true;
         }
         elseif (preg_match(',^Transfer-Encoding:,', $string)) {
-            $this->chunked = strpos($string, 'chunked') !== false;
+            $this->_chunked = strpos($string, 'chunked') !== false;
         }
 
         if ($string !== self::RN) {
@@ -159,17 +159,17 @@ class ProxyHandler
         // Clear the Cache-Control and Pragma headers
         // if they aren't passed from the proxy application.
         if ($headersParsed === false) {
-            if (!$this->cache_control) {
+            if (!$this->_cacheControl) {
                 $this->_removeHeader('Cache-Control');
             }
-            if (!$this->pragma) {
+            if (!$this->_pragma) {
                 $this->_removeHeader('Pragma');
             }
             $headersParsed = true;
         }
 
         $length = strlen($string);
-        if ($this->chunked) {
+        if ($this->_chunked) {
             echo dechex($length) . self::RN . $string . self::RN;
         } else {
             echo $string;
