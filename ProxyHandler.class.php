@@ -134,7 +134,7 @@ class ProxyHandler
 
     protected function handleClientHeaders()
     {
-        $headers = $this->requestHeaders();
+        $headers = $this->_getRequestHeaders();
         $xForwardedFor = array();
 
         foreach ($headers as $header => $value) {
@@ -164,10 +164,10 @@ class ProxyHandler
         // if they aren't passed from the proxy application.
         if ($headersParsed === false) {
             if (!$this->cache_control) {
-                header('Cache-Control: ');
+                $this->_removeHeader('Cache-Control');
             }
             if (!$this->pragma) {
-                header('Pragma: ');
+                $this->_removeHeader('Pragma');
             }
             $headersParsed = true;
         }
@@ -181,7 +181,7 @@ class ProxyHandler
         return $length;
     }
 
-    private function requestHeaders()
+    private function _getRequestHeaders()
     {
         if (function_exists('apache_request_headers')) { // If apache_request_headers() exists
             if ($headers = apache_request_headers()) { // And works...
@@ -198,5 +198,14 @@ class ProxyHandler
             }
         }
         return $headers;
+    }
+
+    private function _removeHeader($headerName)
+    {
+        if (function_exists('header_remove')) {
+            header_remove($headerName);
+        } else {
+            header($headerName . ': ');
+        }
     }
 }
