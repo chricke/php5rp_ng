@@ -106,19 +106,27 @@ class ProxyHandler
         if ($requestMethod !== 'GET') {
             $this->setCurlOption(CURLOPT_CUSTOMREQUEST, $requestMethod);
 
+            $inputStream = isset($options['inputStream']) ? $options['inputStream'] : 'php://input';
+
             switch($requestMethod) {
                 case 'POST':
-                    // Encode and form the post data
-                    if (!isset($HTTP_RAW_POST_DATA)) {
-                        $HTTP_RAW_POST_DATA = file_get_contents('php://input');
+                    $data = '';
+                    if (isset($options['data'])) {
+                        $data = $options['data'];
                     }
-                    $this->setCurlOption(CURLOPT_POSTFIELDS, $HTTP_RAW_POST_DATA);
+                    else {
+                        if (!isset($HTTP_RAW_POST_DATA)) {
+                            $HTTP_RAW_POST_DATA = file_get_contents($inputStream);
+                        }
+                        $data = $HTTP_RAW_POST_DATA;
+                    }
+                    $this->setCurlOption(CURLOPT_POSTFIELDS, $data);
                     break;
                 case 'PUT':
                     // Set the request method.
                     $this->setCurlOption(CURLOPT_UPLOAD, 1);
                     // PUT data comes in on the stdin stream.
-                    $putData = fopen('php://input', 'r');
+                    $putData = fopen($inputStream, 'r');
                     $this->setCurlOption(CURLOPT_READDATA, $putData);
                     // TODO: set CURLOPT_INFILESIZE to the value of Content-Length.
                     break;
