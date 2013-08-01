@@ -38,22 +38,45 @@ class ProxyHandler
     /**
      * Create a new ProxyHandler
      *
-     * @param string $proxyUri
-     * @param string|null $baseUri
+     * @param array|string $options
      */
-    function __construct($proxyUri, $baseUri = null)
+    function __construct($options)
     {
-        $translatedUri = rtrim($proxyUri, '/');
+        if (is_string($options)) {
+            $options = array('proxyUri' => $options);
+        }
+        // trim slashes, we will append what is needed later
+        $translatedUri = rtrim($options['proxyUri'], '/');
 
-        if ($baseUri === null && isset($_SERVER['REDIRECT_URL'])) {
+        // Get all parameters from options
+
+        $baseUri = '';
+        if (isset($options['baseUri'])) {
+            $baseUri = $options['baseUri'];
+        }
+        elseif (!empty($_SERVER['REDIRECT_URL'])) {
             $baseUri = dirname($_SERVER['REDIRECT_URL']);
         }
 
-        // Parse all the parameters for the URL
-        if (isset($_SERVER['REQUEST_URI'])) {
-            $requestUri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-            if ($baseUri && strpos($requestUri, $baseUri) === 0) {
-                $requestUri = substr($requestUri, strlen($baseUri));
+        $requestUri = '';
+        if (isset($options['requestUri'])) {
+            $requestUri = $options['requestUri'];
+        }
+        else {
+            if (!empty($_SERVER['REQUEST_URI'])) {
+                $requestUri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+            }
+            if (!empty($_SERVER['QUERY_STRING'])) {
+                $requestUri .= '?' . $_SERVER['QUERY_STRING'];
+            }
+        }
+
+        if (!empty($requestUri)) {
+            if (!empty($baseUri)) {
+                $baseUriLength = strlen($baseUri);
+                if (substr($requestUri, 0, $baseUriLength) === $baseUri) {
+                    $requestUri = substr($requestUri, $baseUriLength);
+                }
             }
             $translatedUri .= $requestUri;
         }
@@ -61,22 +84,26 @@ class ProxyHandler
             $translatedUri .= '/';
         }
 
-        if ($_SERVER['QUERY_STRING'] !== '') {
-            $translatedUri .= "?{$_SERVER['QUERY_STRING']}";
-        }
-
         $this->_curlHandle = curl_init($translatedUri);
 
-        // Set various options
+        // Set various cURL options
+
         $this->setCurlOption(CURLOPT_FOLLOWLOCATION, true);
         $this->setCurlOption(CURLOPT_RETURNTRANSFER, true);
         $this->setCurlOption(CURLOPT_BINARYTRANSFER, true); // For images, etc.
         $this->setCurlOption(CURLOPT_WRITEFUNCTION, array($this, 'readResponse'));
         $this->setCurlOption(CURLOPT_HEADERFUNCTION, array($this, 'readHeaders'));
 
-        $requestMethod = $_SERVER['REQUEST_METHOD'];
-        if ($requestMethod !== 'GET') { // Default curl request method is 'GET'
-            // Set the request method
+        $requestMethod = '';
+        if (isset($options['requestMethod'])) {
+            $requestMethod = $options['requestMethod'];
+        }
+        elseif (!empty($_SERVER['REQUEST_METHOD'])) {
+            $requestMethod = $_SERVER['REQUEST_METHOD'];
+        }
+
+        // Default cURL request method is 'GET'
+        if ($requestMethod !== 'GET') {
             $this->setCurlOption(CURLOPT_CUSTOMREQUEST, $requestMethod);
 
             switch($requestMethod) {
