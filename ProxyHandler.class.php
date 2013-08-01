@@ -10,33 +10,33 @@ class ProxyHandler
     private $_pragma = false;
     private $_clientHeaders = array();
 
-    function __construct($proxy_url, $base_uri = null)
+    function __construct($proxyUri, $baseUri = null)
     {
         // Strip the trailing '/' from the URL so they are the same.
-        $translated_url = rtrim($proxy_url, '/');
+        $translatedUri = rtrim($proxyUri, '/');
 
-        if ($base_uri === null && isset($_SERVER['REDIRECT_URL'])) {
-            $base_uri = dirname($_SERVER['REDIRECT_URL']);
+        if ($baseUri === null && isset($_SERVER['REDIRECT_URL'])) {
+            $baseUri = dirname($_SERVER['REDIRECT_URL']);
         }
 
         // Parse all the parameters for the URL
         if (isset($_SERVER['REQUEST_URI'])) {
-            $request_uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-            if ($base_uri && strpos($request_uri, $base_uri) === 0) {
-                $request_uri = substr($request_uri, strlen($base_uri));
+            $requestUri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+            if ($baseUri && strpos($requestUri, $baseUri) === 0) {
+                $requestUri = substr($requestUri, strlen($baseUri));
             }
-            $translated_url .= $request_uri;
+            $translatedUri .= $requestUri;
         }
         else {
             // Add the '/' at the end
-            $translated_url .= '/';
+            $translatedUri .= '/';
         }
 
         if ($_SERVER['QUERY_STRING'] !== '') {
-            $translated_url .= "?{$_SERVER['QUERY_STRING']}";
+            $translatedUri .= "?{$_SERVER['QUERY_STRING']}";
         }
 
-        $this->_curlHandle = curl_init($translated_url);
+        $this->_curlHandle = curl_init($translatedUri);
 
         // Set various options
         $this->setCurlOption(CURLOPT_FOLLOWLOCATION, true);
@@ -46,12 +46,12 @@ class ProxyHandler
         $this->setCurlOption(CURLOPT_WRITEFUNCTION, array($this, 'readResponse'));
         $this->setCurlOption(CURLOPT_HEADERFUNCTION, array($this, 'readHeaders'));
 
-        $method = $_SERVER['REQUEST_METHOD'];
-        if ($method !== 'GET') { // Default curl request method is 'GET'
+        $requestMethod = $_SERVER['REQUEST_METHOD'];
+        if ($requestMethod !== 'GET') { // Default curl request method is 'GET'
             // Set the request method
-            $this->setCurlOption(CURLOPT_CUSTOMREQUEST, $method);
+            $this->setCurlOption(CURLOPT_CUSTOMREQUEST, $requestMethod);
 
-            switch($method) {
+            switch($requestMethod) {
                 case 'POST':
                     // Encode and form the post data
                     if (!isset($HTTP_RAW_POST_DATA)) {
@@ -63,8 +63,8 @@ class ProxyHandler
                     // Set the request method.
                     $this->setCurlOption(CURLOPT_UPLOAD, 1);
                     // PUT data comes in on the stdin stream.
-                    $putdata = fopen('php://input', 'r');
-                    $this->setCurlOption(CURLOPT_READDATA, $putdata);
+                    $putData = fopen('php://input', 'r');
+                    $this->setCurlOption(CURLOPT_READDATA, $putData);
                     // TODO: set CURLOPT_INFILESIZE to the value of Content-Length.
                     break;
             }
@@ -114,22 +114,22 @@ class ProxyHandler
         curl_setopt($this->_curlHandle, $option, $value);
     }
 
-    protected function readHeaders(&$cu, $string)
+    protected function readHeaders(&$cu, $header)
     {
-        $length = strlen($string);
+        $length = strlen($header);
 
-        if (preg_match(',^Cache-Control:,', $string)) {
+        if (preg_match(',^Cache-Control:,', $header)) {
             $this->_cacheControl = true;
         }
-        elseif (preg_match(',^Pragma:,', $string)) {
+        elseif (preg_match(',^Pragma:,', $header)) {
             $this->_pragma = true;
         }
-        elseif (preg_match(',^Transfer-Encoding:,', $string)) {
-            $this->_chunked = strpos($string, 'chunked') !== false;
+        elseif (preg_match(',^Transfer-Encoding:,', $header)) {
+            $this->_chunked = strpos($header, 'chunked') !== false;
         }
 
-        if ($string !== self::RN) {
-            header(rtrim($string));
+        if ($header !== self::RN) {
+            header(rtrim($header));
         }
 
         return $length;
@@ -159,7 +159,7 @@ class ProxyHandler
         $this->setClientHeader('X-Real-IP', $xForwardedFor[0]);
     }
 
-    protected function readResponse(&$cu, $string)
+    protected function readResponse(&$cu, $body)
     {
         static $headersParsed = false;
 
@@ -175,29 +175,29 @@ class ProxyHandler
             $headersParsed = true;
         }
 
-        $length = strlen($string);
+        $length = strlen($body);
         if ($this->_chunked) {
-            echo dechex($length) . self::RN . $string . self::RN;
+            echo dechex($length) . self::RN . $body . self::RN;
         } else {
-            echo $string;
+            echo $body;
         }
         return $length;
     }
 
     private function _getRequestHeaders()
     {
-        if (function_exists('apache_request_headers')) { // If apache_request_headers() exists
-            if ($headers = apache_request_headers()) { // And works...
-                return $headers; // Use it
+        if (function_exists('apache_request_headers')) {
+            if ($headers = apache_request_headers()) {
+                return $headers;
             }
         }
 
         $headers = array();
-        foreach (array_keys($_SERVER) as $skey) {
-            if (substr($skey, 0, 5) == 'HTTP_') {
-                $headername = strtolower(substr($skey, 5, strlen($skey)));
-                $headername = str_replace(' ', '-', ucwords(str_replace('_', ' ', $headername)));
-                $headers[$headername] = $_SERVER[$skey];
+        foreach ($_SERVER as $key => $value) {
+            if (substr($key, 0, 5) == 'HTTP_' && !empty($value)) {
+                $headerName = strtolower(substr($key, 5, strlen($key)));
+                $headerName = str_replace(' ', '-', ucwords(str_replace('_', ' ', $headerName)));
+                $headers[$headerName] = $value;
             }
         }
         return $headers;
