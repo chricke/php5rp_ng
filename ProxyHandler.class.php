@@ -83,7 +83,7 @@ class ProxyHandler
     public function execute()
     {
         $this->setCurlOption(CURLOPT_HTTPHEADER, $this->_clientHeaders);
-        curl_exec($this->_curlHandle);
+        return curl_exec($this->_curlHandle) !== false;
     }
 
     public function close()
@@ -92,6 +92,13 @@ class ProxyHandler
             echo '0' . self::RN . self::RN;
         }
         curl_close($this->_curlHandle);
+    }
+
+    // Get possible curl error.
+    // Should not be called before exec.
+    public function getCurlError()
+    {
+        return curl_error($this->_curlHandle);
     }
 
     // Get the information about the request.
