@@ -1,15 +1,46 @@
 <?php
+/**
+ * php5rp_ng - PHP5 Reverse Proxy Next Generation
+ *
+ * @link      https://github.com/chricke/php5rp_ng
+ * @copyright Copyright (c) 2010, 2013 Christian "chricke" Beckmann < mail@christian-beckmann.net >.
+ * @license   https://github.com/chricke/php5rp_ng/blob/master/README.md BSD license.
+ */
 
 class ProxyHandler
 {
+    /**
+     * @type string
+     */
     const RN = "\r\n";
 
+    /**
+     * @type boolean
+     */
     private $_cacheControl = false;
+    /**
+     * @type boolean
+     */
     private $_chunked = false;
+    /**
+     * @type array
+     */
     private $_clientHeaders = array();
+    /**
+     * @type resource
+     */
     private $_curlHandle;
+    /**
+     * @type boolean
+     */
     private $_pragma = false;
 
+    /**
+     * Create a new ProxyHandler
+     *
+     * @param string $proxyUri
+     * @param string|null $baseUri
+     */
     function __construct($proxyUri, $baseUri = null)
     {
         $translatedUri = rtrim($proxyUri, '/');
@@ -71,6 +102,9 @@ class ProxyHandler
         $this->handleClientHeaders();
     }
 
+    /**
+     * @return array
+     */
     private function _getRequestHeaders()
     {
         if (function_exists('apache_request_headers')) {
@@ -90,6 +124,10 @@ class ProxyHandler
         return $headers;
     }
 
+    /**
+     * @param string $headerName
+     * @return void
+     */
     private function _removeHeader($headerName)
     {
         if (function_exists('header_remove')) {
@@ -99,6 +137,11 @@ class ProxyHandler
         }
     }
 
+    /**
+     * Called at the end of the constructor
+     *
+     * @return void
+     */
     protected function handleClientHeaders()
     {
         $headers = $this->_getRequestHeaders();
@@ -123,6 +166,13 @@ class ProxyHandler
         $this->setClientHeader('X-Real-IP', $xForwardedFor[0]);
     }
 
+    /**
+     * Used as value for cURL option CURLOPT_HEADERFUNCTION
+     *
+     * @param resource $cu
+     * @param string $string
+     * @return int
+     */
     protected function readHeaders(&$cu, $header)
     {
         $length = strlen($header);
@@ -144,6 +194,13 @@ class ProxyHandler
         return $length;
     }
 
+    /**
+     * Used as value for cURL option CURLOPT_HEADERFUNCTION
+     *
+     * @param resource $cu
+     * @param string $body
+     * @return int
+     */
     protected function readResponse(&$cu, $body)
     {
         static $headersParsed = false;
@@ -169,6 +226,11 @@ class ProxyHandler
         return $length;
     }
 
+    /**
+     * Close the cURL handle and a possible chunked response
+     *
+     * @return void
+     */
     public function close()
     {
         if ($this->_chunked) {
@@ -177,33 +239,61 @@ class ProxyHandler
         curl_close($this->_curlHandle);
     }
 
-    // Executes the proxy.
+    /**
+     * Executes the cURL handler, making the proxy request.
+     * Returns true if request is successful, false if there was an error.
+     * By checking this return, you may output the return from getCurlError
+     * Or output your own bad gateway page.
+     *
+     * @return boolean
+     */
     public function execute()
     {
         $this->setCurlOption(CURLOPT_HTTPHEADER, $this->_clientHeaders);
         return curl_exec($this->_curlHandle) !== false;
     }
 
-    // Get possible curl error.
-    // Should not be called before exec.
+    /**
+     * Get possible cURL error.
+     * Should NOT be called before exec.
+     *
+     * @return string
+     */
     public function getCurlError()
     {
         return curl_error($this->_curlHandle);
     }
 
-    // Get the information about the request.
-    // Should not be called before exec.
+    /**
+     * Get information about the request.
+     * Should NOT be called before exec.
+     *
+     * @return array
+     */
     public function getCurlInfo()
     {
         return curl_getinfo($this->_curlHandle);
     }
 
+    /**
+     * Sets a new header that will be sent with the proxy request
+     *
+     * @param string $headerName
+     * @param string $value
+     * @return void
+     */
     public function setClientHeader($headerName, $value)
     {
         $this->_clientHeaders[] = $headerName . ': ' . $value;
     }
 
-    // Sets a curl option.
+    /**
+     * Sets a cURL option.
+     *
+     * @param string $option
+     * @param string $value
+     * @return void
+     */
     public function setCurlOption($option, $value)
     {
         curl_setopt($this->_curlHandle, $option, $value);
