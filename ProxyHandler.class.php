@@ -74,9 +74,9 @@ class ProxyHandler
         $this->handleClientHeaders();
     }
 
-    public function setClientHeader($header)
+    public function setClientHeader($headerName, $value)
     {
-        $this->_clientHeaders[] = $header;
+        $this->_clientHeaders[] = $headerName . ': ' . $value;
     }
 
     // Executes the proxy.
@@ -140,8 +140,8 @@ class ProxyHandler
         $headers = $this->_getRequestHeaders();
         $xForwardedFor = array();
 
-        foreach ($headers as $header => $value) {
-            switch($header) {
+        foreach ($headers as $headerName => $value) {
+            switch($headerName) {
                 case 'Host':
                 case 'X-Real-IP':
                     break;
@@ -149,14 +149,14 @@ class ProxyHandler
                     $xForwardedFor[] = $value;
                     break;
                 default:
-                    $this->setClientHeader(sprintf('%s: %s', $header, $value));
+                    $this->setClientHeader($headerName, $value);
                     break;
             }
         }
 
         $xForwardedFor[] = $_SERVER['REMOTE_ADDR'];
-        $this->setClientHeader('X-Forwarded-For: ' . implode(',', $xForwardedFor));
-        $this->setClientHeader('X-Real-IP: ' . $xForwardedFor[0]);
+        $this->setClientHeader('X-Forwarded-For', implode(',', $xForwardedFor));
+        $this->setClientHeader('X-Real-IP', $xForwardedFor[0]);
     }
 
     protected function readResponse(&$cu, $string)
