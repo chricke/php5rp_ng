@@ -5,6 +5,12 @@ if (!@include __DIR__ . '/../ProxyHandler.class.php') {
 }
 
 $proxy = new ProxyHandler('http://internal.example.org');
-$proxy->execute();
-//print_r($proxy->getCurlInfo()); // Uncomment to see request info
+
+// Check for a success
+if ($proxy->execute()) {
+    //print_r($proxy->getCurlInfo()); // Uncomment to see request info
+} else {
+    echo $proxy->getCurlError();
+}
+
 $proxy->close();
