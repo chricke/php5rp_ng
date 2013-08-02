@@ -230,7 +230,7 @@ class ProxyHandler
     }
 
     /**
-     * Used as value for cURL option CURLOPT_HEADERFUNCTION
+     * Used as value for cURL option CURLOPT_WRITEFUNCTION
      *
      * @param resource $cu
      * @param string $body
