@@ -39,9 +39,9 @@ Whenever you are bitten by any quirks, please don't hesitate to
 
 ### Authors
 
-- Brian Nelson < mrpoundsign@gmail.com >
 - Christian "chricke" Beckmann < mail@christian-beckmann.net >
 - drkibitz < info@drkibitz.com >
+- Brian Nelson < mrpoundsign@gmail.com >
 
 ### Copyright & License
 
