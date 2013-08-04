@@ -1,18 +1,6 @@
 <?php
 
-if (!@include __DIR__ . '/../ProxyHandler.class.php') {
-    die('Could not load proxy');
-}
-
-$proxy = new ProxyHandler('http://internal.example.org');
-
-// Prevents cURL from hanging on errors
-$proxy->setCurlOption(CURLOPT_CONNECTTIMEOUT, 1);
-$proxy->setCurlOption(CURLOPT_TIMEOUT, 5);
-
-// Check for a success
-if ($proxy->execute() === false) {
-
+function sendBadGateWay($message = 'proxy handler') {
     // Set status header
     $protocol = (isset($_SERVER['SERVER_PROTOCOL']) ? $_SERVER['SERVER_PROTOCOL'] : 'HTTP/1.0');
     header($protocol . ' 502: Bad Gateway');
@@ -22,12 +10,31 @@ if ($proxy->execute() === false) {
 <head><title>502 Bad Gateway</title></head>
 <body bgcolor="white">
 <center><h1>502 Bad Gateway</h1></center>
-<hr><center>proxy handler</center>
+<hr><center><?php echo $message; ?></center>
 </body>
 </html>
 <?php
+
     // You've probably seen this in other servers ;)
     echo str_repeat("<!-- a padding to disable MSIE and Chrome friendly error page -->\n", 6);
+    exit;
+}
+
+if (!@include __DIR__ . '/../ProxyHandler.class.php') {
+    sendBadGateWay('Could not load proxy');
+}
+
+$proxy = new ProxyHandler('http://internal.example.org');
+
+// Prevents cURL from hanging on errors
+$proxy->setCurlOption(CURLOPT_CONNECTTIMEOUT, 1);
+$proxy->setCurlOption(CURLOPT_TIMEOUT, 5);
+
+// Check for a success
+if ($proxy->execute()) {
+    //print_r($proxy->getCurlInfo()); // Uncomment to see request info
+} else {
+    sendBadGateWay($proxy->getCurlError());
 }
 
 $proxy->close();

@@ -15,7 +15,9 @@ $proxy->setCurlOption(CURLOPT_TIMEOUT, 5);
 $proxy->setCurlOption(CURLOPT_SSL_VERIFYPEER, false);
 
 // Check for a success
-if ($proxy->execute() === false) {
+if ($proxy->execute()) {
+    //print_r($proxy->getCurlInfo()); // Uncomment to see request info
+} else {
     echo $proxy->getCurlError();
 }
 
