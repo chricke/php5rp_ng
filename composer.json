@@ -1,0 +1,36 @@
+{
+    "archive": {
+        "exclude": ["/examples"]
+    },
+    "authors": [
+        {
+            "name": "Brian Nelson",
+            "email": "mrpoundsign@gmail.com"
+        }, {
+            "name": "Christian \"chricke\" Beckmann",
+            "email": "mail@christian-beckmann.net",
+            "homepage": "http://http://christian-beckmann.net/"
+        }, {
+            "name": "drkibitz",
+            "email": "info@drkibitz.com",
+            "homepage": "http://drkibitz.com/"
+        }
+    ],
+    "autoload": {
+        "classmap": ["ProxyHandler.class.php"]
+    },
+    "name": "chricke/php5rp_ng",
+    "description": "PHP5 Reverse Proxy Next Generation",
+    "homepage": "http://chricke.github.io/php5rp_ng/",
+    "keywords": ["http", "proxy", "reverse", "curl"],
+    "license": "BSD-2-Clause",
+    "require": {
+        "php": ">=5.2"
+    },
+    "support": {
+        "email": "mail@christian-beckmann.net",
+        "issues": "https://github.com/chricke/php5rp_ng/issues",
+        "source": "https://github.com/chricke/php5rp_ng/"
+    },
+    "version": "1.0.0"
+}
