@@ -45,7 +45,7 @@ class ProxyHandler
         if (is_string($options)) {
             $options = array('proxyUri' => $options);
         }
-        // trim slashes, we will append what is needed later
+        // Trim slashes, we will append what is needed later
         $translatedUri = rtrim($options['proxyUri'], '/');
 
         // Get all parameters from options
@@ -87,10 +87,10 @@ class ProxyHandler
         $this->_curlHandle = curl_init($translatedUri);
 
         // Set various cURL options
-
         $this->setCurlOption(CURLOPT_FOLLOWLOCATION, true);
         $this->setCurlOption(CURLOPT_RETURNTRANSFER, true);
-        $this->setCurlOption(CURLOPT_BINARYTRANSFER, true); // For images, etc.
+        // For images, etc.
+        $this->setCurlOption(CURLOPT_BINARYTRANSFER, true);
         $this->setCurlOption(CURLOPT_WRITEFUNCTION, array($this, 'readResponse'));
         $this->setCurlOption(CURLOPT_HEADERFUNCTION, array($this, 'readHeaders'));
 
@@ -122,6 +122,7 @@ class ProxyHandler
                     }
                     $this->setCurlOption(CURLOPT_POSTFIELDS, $data);
                     break;
+                    
                 case 'PUT':
                     // Set the request method.
                     $this->setCurlOption(CURLOPT_UPLOAD, 1);
@@ -173,7 +174,9 @@ class ProxyHandler
     }
 
     /**
-     * Called at the end of the constructor
+     * Adds the remote servers address to the 'X-Forwarded-For' headers,
+     * sets the 'X-Real-IP' header to the first address forwarded to and
+     * removes some headers we shouldn't pass through.
      *
      * @return void
      */
@@ -187,9 +190,11 @@ class ProxyHandler
                 case 'Host':
                 case 'X-Real-IP':
                     break;
+                    
                 case 'X-Forwarded-For':
                     $xForwardedFor[] = $value;
                     break;
+                    
                 default:
                     $this->setClientHeader($headerName, $value);
                     break;
@@ -202,7 +207,7 @@ class ProxyHandler
     }
 
     /**
-     * Used as value for cURL option CURLOPT_HEADERFUNCTION
+     * Our handler for cURL option CURLOPT_HEADERFUNCTION
      *
      * @param resource $cu
      * @param string $string
@@ -230,7 +235,7 @@ class ProxyHandler
     }
 
     /**
-     * Used as value for cURL option CURLOPT_WRITEFUNCTION
+     * Our handler for cURL option CURLOPT_WRITEFUNCTION
      *
      * @param resource $cu
      * @param string $body
