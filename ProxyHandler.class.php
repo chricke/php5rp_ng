@@ -15,6 +15,10 @@ class ProxyHandler
     const RN = "\r\n";
 
     /**
+     * @type string
+     */
+    private $_translatedUri;
+    /**
      * @type boolean
      */
     private $_cacheControl = false;
@@ -22,6 +26,30 @@ class ProxyHandler
      * @type boolean
      */
     private $_chunked = false;
+    /**
+     * @type boolean
+     */
+    private $_buffered = false;
+    /**
+     * @type array
+     */
+    private $_bufferedContentTypes = null;
+    /**
+     * @type string
+     */
+    private $_contentType;
+    /**
+     * @type string
+     */
+    private $_buffer = '';
+    /**
+     * @type boolean
+     */
+    private $_follow_location = false;
+    /**
+     * @type string
+     */
+    private $_location = null;
     /**
      * @type array
      */
@@ -45,8 +73,11 @@ class ProxyHandler
         if (is_string($options)) {
             $options = array('proxyUri' => $options);
         }
+        if (isset($options['bufferedContentTypes']))
+            $this->_bufferedContentTypes = $options['bufferedContentTypes'];
+
         // Trim slashes, we will append what is needed later
-        $translatedUri = rtrim($options['proxyUri'], '/');
+        $this->_translatedUri = rtrim($options['proxyUri'], '/');
 
         // Get all parameters from options
 
@@ -78,16 +109,19 @@ class ProxyHandler
                     $requestUri = substr($requestUri, $baseUriLength);
                 }
             }
-            $translatedUri .= $requestUri;
+            $this->_translatedUri .= $requestUri;
         }
         else {
-            $translatedUri .= '/';
+            $this->_translatedUri .= '/';
         }
 
-        $this->_curlHandle = curl_init($translatedUri);
+        $this->_curlHandle = curl_init($this->_translatedUri);
 
         // Set various cURL options
-        $this->setCurlOption(CURLOPT_FOLLOWLOCATION, true);
+        if (!isset($options['noFollowLocation'])) {
+            $this->_follow_location = true;
+            $this->setCurlOption(CURLOPT_FOLLOWLOCATION, true);
+        }
         $this->setCurlOption(CURLOPT_RETURNTRANSFER, true);
         // For images, etc.
         $this->setCurlOption(CURLOPT_BINARYTRANSFER, true);
@@ -189,6 +223,7 @@ class ProxyHandler
             switch($headerName) {
                 case 'Host':
                 case 'X-Real-IP':
+                case 'Accept-Encoding':
                     break;
                     
                 case 'X-Forwarded-For':
@@ -217,6 +252,7 @@ class ProxyHandler
     {
         $length = strlen($header);
 
+        $matches = array();
         if (preg_match(',^Cache-Control:,', $header)) {
             $this->_cacheControl = true;
         }
@@ -225,6 +261,9 @@ class ProxyHandler
         }
         elseif (preg_match(',^Transfer-Encoding:,', $header)) {
             $this->_chunked = strpos($header, 'chunked') !== false;
+        }
+        elseif (preg_match(',^Location:\s*(.*),', $header, $matches)) {
+            $this->_location = trim($matches[1]);
         }
 
         if ($header !== self::RN) {
@@ -254,11 +293,27 @@ class ProxyHandler
             if (!$this->_pragma) {
                 $this->_removeHeader('Pragma');
             }
+            $info = $this->getCurlInfo();
+            if (isset($info['content_type'])) {
+                $this->_content_type = preg_replace('/;.*/', '', $info['content_type']);
+                if (in_array($this->_content_type, $this->_bufferedContentTypes)) {
+                    $this->_buffered = true;
+                }
+            }
+            if (!$this->_follow_location && $this->getLocation())
+                $this->_buffered = true;
+            if ($this->_buffered) {
+                $this->_removeHeader('Content-Length');
+                $this->_removeHeader('Transfer-Encoding');
+                $this->_removeHeader('Content-Encoding');
+            }
             $headersParsed = true;
         }
 
         $length = strlen($body);
-        if ($this->_chunked) {
+        if ($this->_buffered) {
+            $this->_buffer .= $body;
+        } elseif ($this->_chunked) {
             echo dechex($length) . self::RN . $body . self::RN;
         } else {
             echo $body;
@@ -273,7 +328,7 @@ class ProxyHandler
      */
     public function close()
     {
-        if ($this->_chunked) {
+        if (!$this->_buffered && $this->_chunked) {
             echo '0' . self::RN . self::RN;
         }
         curl_close($this->_curlHandle);
@@ -338,4 +393,47 @@ class ProxyHandler
     {
         curl_setopt($this->_curlHandle, $option, $value);
     }
+
+    /**
+     * Returns translated uri
+     */
+    public function getTranslatedUri()
+    {
+        return $this->_translatedUri;
+    }
+
+    /**
+     * Returns true if request is buffered
+     */
+    public function isBuffered()
+    {
+        return $this->_buffered;
+    }
+
+    /**
+     * Returns buffer
+     */
+    public function getBuffer()
+    {
+        return $this->_buffer;
+    }
+
+    /**
+     * Returns content type
+     */
+    public function getContentType()
+    {
+        return $this->_content_type;
+    }
+
+    /**
+     * Returns redirect location (if any)
+     */
+    public function getLocation()
+    {
+        return $this->_location;
+    }
 }
+
+// vi: ts=4:sw=4:et:
+?>
