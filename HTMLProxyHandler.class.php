@@ -17,14 +17,15 @@ class HTMLProxyHandler extends ProxyHandler {
         if (isset($options['proxyBaseUri']))
             $this->_proxyBaseUri = $options['proxyBaseUri'];
 
-        $options['bufferedContentTypes'] = array('text/html', 'text/css');
+        if (!isset($options['bufferedContentTypes']))
+            $options['bufferedContentTypes'] = array('text/html', 'text/css', 'text/javascript');
         parent::__construct($options);
 
         // build base URI
         $translatedUri = $this->getTranslatedUri();
         $parsed_url = parse_url($translatedUri);
         $path = isset($parsed_url['path']) ? $parsed_url['path'] : '/';
-        $this->_baseUri = $this->unparse_url_base($parsed_url) . $path;
+        $this->_baseUri = self::unparse_url_base($parsed_url) . $path;
     }
 
     protected static function unparse_url_base($parsed_url)
@@ -111,9 +112,12 @@ class HTMLProxyHandler extends ProxyHandler {
     /**
      * Proxify URL
      */
-    public function proxifyURL($url)
+    public function proxifyURL($url, $parsed_url = null)
     {
-        $scheme = parse_url($url, PHP_URL_SCHEME);
+        if (!$parsed_url)
+            $parsed_url = parse_url($url);
+
+        $scheme = isset($parsed_url['scheme']) ? $parsed_url['scheme'] : '';
         if ($scheme != "http" && $scheme != "https" && $scheme != "ftp")
             return $url;
     
@@ -125,7 +129,7 @@ class HTMLProxyHandler extends ProxyHandler {
      *
      * taken from miniProxy https://github.com/joshdick/miniProxy
      */
-    public function proxifyCSS($buffer)
+    protected function proxifyCSS($buffer)
     {
         $proxy = $this;
         return preg_replace_callback(
@@ -151,7 +155,7 @@ class HTMLProxyHandler extends ProxyHandler {
     }
 
     // Proxify XMLHttpRequest
-    public function proxifyXMLHttpRequest($elem)
+    protected function proxifyXMLHttpRequest($elem)
     {
         // Attempt to force AJAX requests to be made through the proxy by
         // wrapping window.XMLHttpRequest.prototype.open in order to make
@@ -170,7 +174,7 @@ class HTMLProxyHandler extends ProxyHandler {
         //what's coming back is most likely not actually HTML.
         //TODO: Do this check before attempting to do any sort of DOM parsing?
         $script = $elem->ownerDocument->createElement("script");
-        $this->replaceTextContent($script,
+        self::replaceTextContent($script,
           '(function() {
               window.proxy_map_url = function() {
                 function rel2abs(base, href) { // RFC 3986
@@ -243,7 +247,7 @@ class HTMLProxyHandler extends ProxyHandler {
      *
      * partially taken from miniProxy https://github.com/joshdick/miniProxy
      */
-    public function proxifyHTML($buffer)
+    protected function proxifyHTML($buffer)
     {
         static $html_links = array(
             'a' => 'href',
@@ -312,7 +316,7 @@ class HTMLProxyHandler extends ProxyHandler {
             $value = $e->textContent;
             $new_value = $this->proxifyCSS($value);
             if ($new_value != $value) {
-                $this->replaceTextContent($e, $new_value);
+                self::replaceTextContent($e, $new_value);
             }
         }
     
@@ -325,6 +329,14 @@ class HTMLProxyHandler extends ProxyHandler {
         }
 
         return $this->saveHTML($xpath);
+    }
+
+    /**
+     * Proxify JavaScript
+     */
+    protected function proxifyJS($buffer)
+    {
+        return $buffer;
     }
 
     /**
@@ -360,6 +372,8 @@ class HTMLProxyHandler extends ProxyHandler {
             $buffer = $this->proxifyHTML($buffer);
         } elseif ($this->getContentType() == "text/css") {
             $buffer = $this->proxifyCSS($buffer);
+        } elseif ($this->getContentType() == "text/javascript") {
+            $buffer = $this->proxifyJS($buffer);
         }
         $content_length = strlen($buffer);
         header("Content-Length: $content_length");
