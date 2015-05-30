@@ -30,8 +30,7 @@ Whenever you are bitten by any quirks, please don't hesitate to
 
 ### Source Repository
 
-- Available on github at chricke/online-right-now
-- (<https://github.com/chricke/php5rp_ng>).
+- Available on github at chricke/php5rp_ng (<https://github.com/chricke/php5rp_ng>).
 
 ### TODO
 
