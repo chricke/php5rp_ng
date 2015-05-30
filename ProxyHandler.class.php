@@ -62,6 +62,10 @@ class ProxyHandler
      * @type boolean
      */
     private $_pragma = false;
+    /**
+     * @type string
+     */
+    private $_content_type = null;
 
     /**
      * Create a new ProxyHandler
