@@ -24,6 +24,8 @@ class HTMLProxyHandler extends ProxyHandler {
         // build base URI
         $translatedUri = $this->getTranslatedUri();
         $parsed_url = parse_url($translatedUri);
+        if (!isset($parsed_url['scheme']))
+            $parsed_url['scheme'] = 'http';
         $path = isset($parsed_url['path']) ? $parsed_url['path'] : '/';
         $this->_baseUri = self::unparse_url_base($parsed_url) . $path;
     }
