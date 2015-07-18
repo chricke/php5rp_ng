@@ -198,7 +198,7 @@ class ProxyHandler
      * @param string $headerName
      * @return void
      */
-    private function _removeHeader($headerName)
+    protected function _removeHeader($headerName)
     {
         if (function_exists('header_remove')) {
             header_remove($headerName);
