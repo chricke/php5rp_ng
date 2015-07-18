@@ -99,14 +99,9 @@ class HTMLProxyHandler extends ProxyHandler {
     public static function replaceTextContent($n, $value)
     {
         // $n->nodeValue = htmlspecialchars($value, ENT_NOQUOTES);
-    
-        $delete_nodes = array();
-        foreach ($n->childNodes as $c) {
-            if ($c->nodeType == XML_TEXT_NODE)
-                $delete_nodes[] = $c;
+        while ($n->hasChildNodes()) {
+               $n->removeChild($n->firstChild);
         }
-        foreach ($delete_nodes as $c)
-            $n->removeChild($c);
     
         $n->appendChild($n->ownerDocument->createTextNode($value));
     }
@@ -316,12 +311,27 @@ class HTMLProxyHandler extends ProxyHandler {
         // proxify <style> tags
         foreach ($xpath->query('//style') as $e) {
             $value = $e->textContent;
+            if (!$value)
+                continue;
             $new_value = $this->proxifyCSS($value);
             if ($new_value != $value) {
                 self::replaceTextContent($e, $new_value);
             }
         }
     
+        // proxify <script> tags
+        foreach ($xpath->query('//script') as $e) {
+            if ($e->hasAttribute('type') && $e->getAttribute('type') != 'text/javascript')
+                continue;
+            $value = $e->textContent;
+            if (!$value)
+                continue;
+            $new_value = $this->proxifyJS($value);
+            if ($new_value != $value) {
+                self::replaceTextContent($e, $new_value);
+            }
+        }
+
         // proxify XMLHttpRequest
         $head = $xpath->query('//head')->item(0);
         $body = $xpath->query('//body')->item(0);
