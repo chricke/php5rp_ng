@@ -12,13 +12,19 @@ class HTMLProxyHandler extends ProxyHandler {
      */
     private $_baseUri;
 
+    /**
+     * @type string
+     */
+    private $_anchorTarget;
+
     public function __construct($options)
     {
         if (isset($options['proxyBaseUri']))
             $this->_proxyBaseUri = $options['proxyBaseUri'];
-
         if (!isset($options['bufferedContentTypes']))
-            $options['bufferedContentTypes'] = array('text/html', 'text/css', 'text/javascript');
+            $options['bufferedContentTypes'] = array('text/html', 'text/css', 'text/javascript', 'application/javascript');
+        if (isset($options['anchorTarget']))
+            $this->_anchorTarget = $options['anchorTarget'];
         parent::__construct($options);
 
         // build base URI
@@ -109,8 +115,12 @@ class HTMLProxyHandler extends ProxyHandler {
     /**
      * Proxify URL
      */
-    public function proxifyURL($url, $parsed_url = null)
+    public function proxifyURL($url, $parsed_url = null, $is_redirect = false)
     {
+        $proxy_base_uri = $this->getProxyBaseUri();
+        if (substr($url, 0, strlen($proxy_base_uri)) == $proxy_base_uri)
+            return $url;
+
         if (!$parsed_url)
             $parsed_url = parse_url($url);
 
@@ -118,7 +128,7 @@ class HTMLProxyHandler extends ProxyHandler {
         if ($scheme != "http" && $scheme != "https" && $scheme != "ftp")
             return $url;
     
-        return $this->getProxyBaseUri() . $url;
+        return $proxy_base_uri . $url;
     }
     
     /**
@@ -173,25 +183,24 @@ class HTMLProxyHandler extends ProxyHandler {
         $script = $elem->ownerDocument->createElement("script");
         self::replaceTextContent($script,
           '(function() {
-              window.proxy_map_url = function() {
+              window.proxy_map_url = function(url) {
+                function parseURI(url) {
+                  var m = String(url).replace(/^\s+|\s+$/g, "").match(/^([^:\/?#]+:)?(\/\/(?:[^:@]*(?::[^:@]*)?@)?(([^:\/?#]*)(?::(\d*))?))?([^?#]*)(\?[^#]*)?(#[\s\S]*)?/);
+                  // authority = "//" + user + ":" + pass "@" + hostname + ":" port
+                  return (m ? {
+                    href : m[0] || "",
+                    protocol : m[1] || "",
+                    authority: m[2] || "",
+                    host : m[3] || "",
+                    hostname : m[4] || "",
+                    port : m[5] || "",
+                    pathname : m[6] || "",
+                    search : m[7] || "",
+                    hash : m[8] || ""
+                  } : null);
+                }
+    
                 function rel2abs(base, href) { // RFC 3986
-    
-                    function parseURI(url) {
-                      var m = String(url).replace(/^\s+|\s+$/g, "").match(/^([^:\/?#]+:)?(\/\/(?:[^:@]*(?::[^:@]*)?@)?(([^:\/?#]*)(?::(\d*))?))?([^?#]*)(\?[^#]*)?(#[\s\S]*)?/);
-                      // authority = "//" + user + ":" + pass "@" + hostname + ":" port
-                      return (m ? {
-                        href : m[0] || "",
-                        protocol : m[1] || "",
-                        authority: m[2] || "",
-                        host : m[3] || "",
-                        hostname : m[4] || "",
-                        port : m[5] || "",
-                        pathname : m[6] || "",
-                        search : m[7] || "",
-                        hash : m[8] || ""
-                      } : null);
-                    }
-    
                     function removeDotSegments(input) {
                         var output = [];
                         input.replace(/^(\.\.?(\/|$))+/, "")
@@ -207,7 +216,6 @@ class HTMLProxyHandler extends ProxyHandler {
                         return output.join("").replace(/^\//, input.charAt(0) === "/" ? "/" : "");
                     }
     
-                    href = parseURI(href || "");
                     base = parseURI(base || "");
     
                     return !href || !base ? null : (href.protocol || base.protocol) +
@@ -217,21 +225,53 @@ class HTMLProxyHandler extends ProxyHandler {
                         href.hash;
                 }
     
-                if (arguments[1] == null)
-                    return arguments[1];
+                if (url == null || url == "" || url.indexOf("'.$this->getProxyBaseUri().'") === 0)
+                    return url;
+                href = parseURI(url || "");
+                if (href.protocol && href.protocol != "http" && href.protocol != "https" && href.protocol != "ftp")
+                    return url;
     
-                return "' . $this->getProxyBaseUri() . '" + rel2abs("' . $this->_baseUri . '", arguments[1]);
+                return "'.$this->getProxyBaseUri().'" + rel2abs("'.$this->_baseUri.'", href);
             };
     
+            function set_property_descriptor(name, property, descriptor)
+            {
+                obj = document.createElement(name);
+                try {
+                    Object.defineProperty(Object.getPrototypeOf(obj), property, descriptor);
+                } catch (err) {
+                    //console.log("Failed to set property descriptor for " + name + " (" + property + ")");
+                }
+            }
+
             if (window.XMLHttpRequest) {
               var proxied = window.XMLHttpRequest.prototype.open;
               window.XMLHttpRequest.prototype.open = function() {
-                  if (arguments[1] != null) {
-                    arguments[1] = window.proxy_map_url(arguments[1]);
-                  }
+                  arguments[1] = window.proxy_map_url(arguments[1]);
                   return proxied.apply(this, [].slice.call(arguments));
               };
             }
+
+            var src_descriptor = {
+                get: function() {
+                    return this.getAttribute("src");
+                },
+                set: function(val) {
+                    this.setAttribute("src", window.proxy_map_url(val));
+                },
+            };
+            set_property_descriptor("img", "src", src_descriptor);
+            set_property_descriptor("script", "src", src_descriptor);
+
+            var href_descriptor = {
+                get: function() {
+                    return this.getAttribute("href");
+                },
+                set: function(val) {
+                    this.setAttribute("href", window.proxy_map_url(val));
+                },
+            };
+            set_property_descriptor("a", "href", href_descriptor);
           })();'
         );
         $script->setAttribute("type", "text/javascript");
@@ -288,13 +328,18 @@ class HTMLProxyHandler extends ProxyHandler {
                 continue;
     
             foreach ($html_links[$e->nodeName] as $a) {
-                if (!$e->hasAttribute($a))
-                    continue;
-    
                 $value = $e->getAttribute($a);
+                if (!$value)
+                    continue;
+
                 $new_value = $this->proxifyURL($this->rel2abs($value));
                 if ($new_value != $value) {
                     $e->setAttribute($a, $new_value);
+                }
+                if ($e->nodeName == 'a' && $this->_anchorTarget) {
+                    if (!$e->getAttribute('target')) {
+                        $e->setAttribute('target', $this->_anchorTarget);
+                    }
                 }
             }
         }
@@ -380,11 +425,12 @@ class HTMLProxyHandler extends ProxyHandler {
         }
 
         $buffer = $this->getBuffer();
-        if ($this->getContentType() == "text/html") {
+        $content_type = $this->getContentType();
+        if ($content_type == "text/html") {
             $buffer = $this->proxifyHTML($buffer);
-        } elseif ($this->getContentType() == "text/css") {
+        } elseif ($content_type == "text/css") {
             $buffer = $this->proxifyCSS($buffer);
-        } elseif ($this->getContentType() == "text/javascript") {
+        } elseif (in_array($content_type, array("text/javascript", "application/javascript"))) {
             $buffer = $this->proxifyJS($buffer);
         }
         $content_length = strlen($buffer);
