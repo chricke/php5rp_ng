@@ -62,10 +62,6 @@ class ProxyHandler
      * @type boolean
      */
     private $_pragma = false;
-    /**
-     * @type string
-     */
-    private $_content_type = null;
 
     /**
      * Create a new ProxyHandler
@@ -299,8 +295,8 @@ class ProxyHandler
             }
             $info = $this->getCurlInfo();
             if (isset($info['content_type'])) {
-                $this->_content_type = preg_replace('/;.*/', '', $info['content_type']);
-                if (in_array($this->_content_type, $this->_bufferedContentTypes)) {
+                $this->_contentType = preg_replace('/;.*/', '', $info['content_type']);
+                if (in_array($this->_contentType, $this->_bufferedContentTypes)) {
                     $this->_buffered = true;
                 }
             }
@@ -427,7 +423,7 @@ class ProxyHandler
      */
     public function getContentType()
     {
-        return $this->_content_type;
+        return $this->_contentType;
     }
 
     /**
