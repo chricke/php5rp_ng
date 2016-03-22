@@ -228,7 +228,7 @@ class HTMLProxyHandler extends ProxyHandler {
                 if (url == null || url == "" || url.indexOf("'.$this->getProxyBaseUri().'") === 0)
                     return url;
                 href = parseURI(url || "");
-                if (href.protocol && href.protocol != "http" && href.protocol != "https" && href.protocol != "ftp")
+                if (href.protocol && href.protocol != "http:" && href.protocol != "https:" && href.protocol != "ftp:")
                     return url;
     
                 return "'.$this->getProxyBaseUri().'" + rel2abs("'.$this->_baseUri.'", href);
