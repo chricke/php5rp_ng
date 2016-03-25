@@ -85,8 +85,9 @@ class ProxyHandler
         if (isset($options['baseUri'])) {
             $baseUri = $options['baseUri'];
         }
-        elseif (!empty($_SERVER['REDIRECT_URL'])) {
-            $baseUri = dirname($_SERVER['REDIRECT_URL']);
+        elseif (!empty($options['proxyUri'])) {
+            $baseUri = parse_url($options['proxyUri'], PHP_URL_PATH);
+            $baseUri = dirname($baseUri);
         }
 
         $requestUri = '';
@@ -296,7 +297,9 @@ class ProxyHandler
             $info = $this->getCurlInfo();
             if (isset($info['content_type'])) {
                 $this->_contentType = preg_replace('/;.*/', '', $info['content_type']);
-                if (in_array($this->_contentType, $this->_bufferedContentTypes)) {
+                if (is_array($this->_bufferedContentTypes)
+                    && in_array($this->_contentType, $this->_bufferedContentTypes)
+                ) {
                     $this->_buffered = true;
                 }
             }
