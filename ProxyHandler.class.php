@@ -145,6 +145,7 @@ class ProxyHandler
 
             switch($requestMethod) {
                 case 'POST':
+                case 'PATCH':
                     $data = '';
                     if (isset($options['data'])) {
                         $data = $options['data'];
