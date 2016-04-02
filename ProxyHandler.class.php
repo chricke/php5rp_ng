@@ -33,7 +33,7 @@ class ProxyHandler
     /**
      * @type array
      */
-    private $_bufferedContentTypes = null;
+    private $_bufferedContentTypes = array();
     /**
      * @type string
      */
