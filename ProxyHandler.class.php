@@ -269,7 +269,7 @@ class ProxyHandler
         }
 
         if ($header !== self::RN) {
-            header(rtrim($header));
+            header(rtrim($header), false);
         }
 
         return $length;
@@ -310,6 +310,8 @@ class ProxyHandler
                 $this->_removeHeader('Content-Length');
                 $this->_removeHeader('Transfer-Encoding');
                 $this->_removeHeader('Content-Encoding');
+            } elseif ($this->_chunked) {
+                flush();
             }
             $headersParsed = true;
         }
