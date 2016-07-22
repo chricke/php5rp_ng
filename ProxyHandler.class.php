@@ -267,7 +267,7 @@ class ProxyHandler
         }
 
         if ($header !== self::RN) {
-            header(rtrim($header));
+            header(rtrim($header), false);
         }
 
         return $length;
