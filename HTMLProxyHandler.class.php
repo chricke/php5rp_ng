@@ -3,11 +3,15 @@ include 'ProxyHandler.class.php';
 
 class HTMLProxyHandler extends ProxyHandler {
     /**
+     * Base URI of proxy itself
+     *
      * @type string
      */
     private $_proxyBaseUri = '';
 
     /**
+     * Base URI of request being proxied
+     *
      * @type string
      */
     private $_baseUri;
@@ -22,7 +26,7 @@ class HTMLProxyHandler extends ProxyHandler {
         if (isset($options['proxyBaseUri']))
             $this->_proxyBaseUri = $options['proxyBaseUri'];
         if (!isset($options['bufferedContentTypes']))
-            $options['bufferedContentTypes'] = array('text/html', 'text/css', 'text/javascript', 'application/javascript');
+            $options['bufferedContentTypes'] = array('text/html', 'text/css', 'text/javascript', 'application/javascript', 'application/x-javascript');
         if (isset($options['anchorTarget']))
             $this->_anchorTarget = $options['anchorTarget'];
         parent::__construct($options);
@@ -85,7 +89,10 @@ class HTMLProxyHandler extends ProxyHandler {
         extract(parse_url($this->_baseUri)); //Parse base URL and convert to local variables: $scheme, $host, $path
         $path = isset($path) ? preg_replace('#/[^/]*$#', "", $path) : "/"; //Remove non-directory element from path
         if ($rel[0] == '/') $path = ""; //Destroy path if relative url points to root
-        $port = isset($port) && $port != 80 ? ":" . $port : "";
+        if (isset($port) && (($scheme == "http" && $port != 80) || ($scheme == "https" && $port != 443)))
+            $port = ":" . $port;
+        else
+            $port = "";
         $auth = "";
         if (isset($user)) {
             $auth = $user;
@@ -181,9 +188,10 @@ class HTMLProxyHandler extends ProxyHandler {
         //what's coming back is most likely not actually HTML.
         //TODO: Do this check before attempting to do any sort of DOM parsing?
         $script = $elem->ownerDocument->createElement("script");
+        $script->setAttribute("type", "text/javascript");
         self::replaceTextContent($script,
           '(function() {
-              window.proxy_map_url = function(url) {
+              window.proxifyURL = function(url) {
                 function parseURI(url) {
                   var m = String(url).replace(/^\s+|\s+$/g, "").match(/^([^:\/?#]+:)?(\/\/(?:[^:@]*(?::[^:@]*)?@)?(([^:\/?#]*)(?::(\d*))?))?([^?#]*)(\?[^#]*)?(#[\s\S]*)?/);
                   // authority = "//" + user + ":" + pass "@" + hostname + ":" port
@@ -231,7 +239,8 @@ class HTMLProxyHandler extends ProxyHandler {
                 if (href.protocol && href.protocol != "http:" && href.protocol != "https:" && href.protocol != "ftp:")
                     return url;
     
-                return "'.$this->getProxyBaseUri().'" + rel2abs("'.$this->_baseUri.'", href);
+                url = rel2abs("'.$this->_baseUri.'", href);
+                return "'.$this->getProxyBaseUri().'" + url;
             };
     
             function set_property_descriptor(name, property, descriptor)
@@ -247,7 +256,7 @@ class HTMLProxyHandler extends ProxyHandler {
             if (window.XMLHttpRequest) {
               var proxied = window.XMLHttpRequest.prototype.open;
               window.XMLHttpRequest.prototype.open = function() {
-                  arguments[1] = window.proxy_map_url(arguments[1]);
+                  arguments[1] = window.proxifyURL(arguments[1]);
                   return proxied.apply(this, [].slice.call(arguments));
               };
             }
@@ -257,7 +266,7 @@ class HTMLProxyHandler extends ProxyHandler {
                     return this.getAttribute("src");
                 },
                 set: function(val) {
-                    this.setAttribute("src", window.proxy_map_url(val));
+                    this.setAttribute("src", window.proxifyURL(val));
                 },
             };
             set_property_descriptor("img", "src", src_descriptor);
@@ -268,13 +277,12 @@ class HTMLProxyHandler extends ProxyHandler {
                     return this.getAttribute("href");
                 },
                 set: function(val) {
-                    this.setAttribute("href", window.proxy_map_url(val));
+                    this.setAttribute("href", window.proxifyURL(val));
                 },
             };
             set_property_descriptor("a", "href", href_descriptor);
           })();'
         );
-        $script->setAttribute("type", "text/javascript");
     
         $elem->insertBefore($script, $elem->firstChild);
     }
@@ -365,9 +373,7 @@ class HTMLProxyHandler extends ProxyHandler {
         }
     
         // proxify <script> tags
-        foreach ($xpath->query('//script') as $e) {
-            if ($e->hasAttribute('type') && $e->getAttribute('type') != 'text/javascript')
-                continue;
+        foreach ($xpath->query('//script[@type="text/javascript"]') as $e) {
             $value = $e->textContent;
             if (!$value)
                 continue;
@@ -401,6 +407,16 @@ class HTMLProxyHandler extends ProxyHandler {
      */
     protected function loadHTML($buffer)
     {
+        // workaround for parsing [<>] inside <script>
+        $buffer = preg_replace_callback(',(<script.*?>)(.*?)(</script>),',
+            function ($matches) {
+                $text = str_replace(
+                    array('<', '>'),
+                    array('&lt;', '&gt;'),
+                    $matches[2]);
+                return $matches[1].$text.$matches[3];
+            }, $buffer);
+
         $doc = new DOMDocument();
         @$doc->loadHTML($buffer);
         return new DOMXpath($doc);
@@ -411,6 +427,18 @@ class HTMLProxyHandler extends ProxyHandler {
      */
     protected function saveHTML($xpath)
     {
+        foreach ($xpath->query('//script') as $e) {
+            $value = $e->textContent;
+            if (!$value)
+                continue;
+            $new_value = str_replace(
+                array('&lt;', '&gt;'),
+                array('<', '>'),
+                $value);
+            if ($new_value != $value) {
+                self::replaceTextContent($e, $new_value);
+            }
+        }
         return $xpath->document->saveHTML();
     }
 
