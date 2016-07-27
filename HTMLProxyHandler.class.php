@@ -72,6 +72,9 @@ class HTMLProxyHandler extends ProxyHandler {
      */
     public function rel2abs($rel)
     {
+        if (preg_match(',^{{.*}}$,', $rel))
+            return $rel;
+
         if (empty($rel))
             $rel = ".";
         if (parse_url($rel, PHP_URL_SCHEME) != "") {
@@ -124,6 +127,9 @@ class HTMLProxyHandler extends ProxyHandler {
      */
     public function proxifyURL($url, $parsed_url = null, $is_redirect = false)
     {
+        if (preg_match(',^{{.*}}$,', $url))
+            return $url;
+
         $proxy_base_uri = $this->getProxyBaseUri();
         if (substr($url, 0, strlen($proxy_base_uri)) == $proxy_base_uri)
             return $url;
@@ -418,7 +424,7 @@ class HTMLProxyHandler extends ProxyHandler {
             }, $buffer);
 
         $doc = new DOMDocument();
-        @$doc->loadHTML($buffer);
+        @$doc->loadHTML($buffer, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
         return new DOMXpath($doc);
     }
 
@@ -439,7 +445,9 @@ class HTMLProxyHandler extends ProxyHandler {
                 self::replaceTextContent($e, $new_value);
             }
         }
-        return $xpath->document->saveHTML();
+
+        // fix templates
+        return preg_replace(',%7B%7B([\w\.]+?)%7D%7D,', '{{$1}}', $xpath->document->saveHTML());
     }
 
     /**
