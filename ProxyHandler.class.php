@@ -73,6 +73,10 @@ class ProxyHandler
         if (is_string($options)) {
             $options = array('proxyUri' => $options);
         }
+        if (isset($options['forceBuffered']))
+            $this->_buffered = true;
+        if (isset($options['forceContentType']))
+            $this->_contentType = $options['forceContentType'];
         if (isset($options['bufferedContentTypes']))
             $this->_bufferedContentTypes = $options['bufferedContentTypes'];
 
@@ -122,6 +126,20 @@ class ProxyHandler
         if (!isset($options['noFollowLocation'])) {
             $this->_follow_location = true;
             $this->setCurlOption(CURLOPT_FOLLOWLOCATION, true);
+        }
+        if (isset($options['forceHttpVersion'])) {
+            $v = $options['forceHttpVersion'];
+            switch ($options['forceHttpVersion']) {
+            case 'HTTP/1.0':
+                $this->setCurlOption(CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_0);
+                break;
+            case 'HTTP/1.1':
+                $this->setCurlOption(CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
+                break;
+            default:
+                $this->setCurlOption(CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_NONE);
+                break;
+            }
         }
         $this->setCurlOption(CURLOPT_RETURNTRANSFER, true);
         // For images, etc.
@@ -296,13 +314,11 @@ class ProxyHandler
                 $this->_removeHeader('Pragma');
             }
             $info = $this->getCurlInfo();
-            if (isset($info['content_type'])) {
+            if (isset($info['content_type']) && !isset($this->_contentType)) {
                 $this->_contentType = preg_replace('/;.*/', '', $info['content_type']);
-                if (is_array($this->_bufferedContentTypes)
-                    && in_array($this->_contentType, $this->_bufferedContentTypes)
-                ) {
-                    $this->_buffered = true;
-                }
+            }
+            if (isset($this->_contentType) && in_array($this->_contentType, $this->_bufferedContentTypes)) {
+                $this->_buffered = true;
             }
             if (!$this->_follow_location && $this->getLocation())
                 $this->_buffered = true;
