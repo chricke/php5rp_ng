@@ -26,7 +26,7 @@ class HTMLProxyHandler extends ProxyHandler {
         if (isset($options['proxyBaseUri']))
             $this->_proxyBaseUri = $options['proxyBaseUri'];
         if (!isset($options['bufferedContentTypes']))
-            $options['bufferedContentTypes'] = array('text/html', 'text/css', 'text/javascript', 'application/javascript');
+            $options['bufferedContentTypes'] = array('text/html', 'text/css', 'text/javascript', 'application/javascript', 'application/x-javascript');
         if (isset($options['anchorTarget']))
             $this->_anchorTarget = $options['anchorTarget'];
         parent::__construct($options);
@@ -194,6 +194,7 @@ class HTMLProxyHandler extends ProxyHandler {
         //what's coming back is most likely not actually HTML.
         //TODO: Do this check before attempting to do any sort of DOM parsing?
         $script = $elem->ownerDocument->createElement("script");
+        $script->setAttribute("type", "text/javascript");
         self::replaceTextContent($script,
           '(function() {
               window.proxifyURL = function(url) {
@@ -288,7 +289,6 @@ class HTMLProxyHandler extends ProxyHandler {
             set_property_descriptor("a", "href", href_descriptor);
           })();'
         );
-        $script->setAttribute("type", "text/javascript");
     
         $elem->insertBefore($script, $elem->firstChild);
     }
