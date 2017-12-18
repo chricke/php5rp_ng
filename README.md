@@ -1,7 +1,7 @@
 # php5rp_ng
 ### PHP5 Reverse Proxy Next Generation
 
-> This software is still under development and is considered experimental.
+# This software is no longer maintained. If you really want to use this please make sure you also read the infos under "Issues".
 
 ### Description
 
